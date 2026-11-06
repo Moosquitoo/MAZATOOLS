@@ -26,4 +26,11 @@ export const TOOLS = [
     path: 'tools/nettoyeur-video/',
     icon: '<path d="M21 21H8a2 2 0 0 1-1.42-.59l-3-3a2 2 0 0 1 0-2.82l10-10a2 2 0 0 1 2.83 0l4.59 4.58a2 2 0 0 1 0 2.83L13 21"/><path d="M8.5 10.5l5 5"/>',
   },
+  {
+    id: 'images-powerpoint',
+    name: 'Images PowerPoint',
+    description: "Récupérer les images d'une présentation",
+    path: 'tools/images-powerpoint/',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  },
 ];

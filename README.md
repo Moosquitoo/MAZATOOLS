@@ -6,6 +6,7 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | --- | --- |
 | [SHRINKSIZER](tools/shrinksizer/) | Réduire une vidéo à la taille voulue (en Mo), avec la meilleure qualité possible |
 | [Nettoyeur vidéo](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
+| [Images PowerPoint](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation dans leur qualité d'origine |
 
 ## Liens
 
@@ -67,4 +68,5 @@ tools.js                      la liste des outils (à modifier pour en ajouter)
 shared/                       thème commun : couleurs, police, clair / sombre
 tools/shrinksizer/            compresseur vidéo (voir son README)
 tools/nettoyeur-video/        nettoyeur de métadonnées (voir son README)
+tools/images-powerpoint/      extracteur d'images PowerPoint
 ```
