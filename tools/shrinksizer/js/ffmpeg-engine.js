@@ -175,7 +175,7 @@ export async function compress(file, info, settings, report, signal) {
   const targetBytes = Math.floor(settings.targetMB * MB);
   const plan = planForTarget({
     targetBytes, duration: info.duration, srcW: info.width, srcH: info.height, fps: info.fps,
-    hasAudio: info.hasAudio, removeAudio, codec: 'avc', maxWidth,
+    hasAudio: info.hasAudio, removeAudio, codec: 'avc', maxWidth, lockWidth: settings.lockWidth,
   });
   if (!plan.ok) {
     const err = new Error(`Taille trop petite pour cette vidéo. Minimum conseillé : ${(plan.minBytes / MB).toFixed(1)} Mo.`);

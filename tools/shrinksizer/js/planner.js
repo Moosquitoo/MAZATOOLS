@@ -48,7 +48,7 @@ export function scaledSize(srcW, srcH, width) {
 export function planForTarget({
   targetBytes, duration, srcW, srcH, fps = 30,
   hasAudio = true, removeAudio = false, codec = 'avc', maxWidth = Infinity,
-  safety = 0.96,
+  lockWidth = null, safety = 0.96,
 }) {
   if (!(duration > 0)) return { ok: false, reason: 'duration', minBytes: 0 };
   const keepAudio = hasAudio && !removeAudio;
@@ -66,7 +66,9 @@ export function planForTarget({
   }
 
   const capW = Math.min(srcW, maxWidth);
-  const widths = [capW, ...STANDARD_WIDTHS.filter((w) => w < capW)];
+  // Résolution verrouillée : une seule largeur possible (jamais plus grande que la source).
+  const locked = lockWidth ? Math.min(srcW, lockWidth) : null;
+  const widths = locked ? [locked] : [capW, ...STANDARD_WIDTHS.filter((w) => w < capW)];
   const fpsOptions = srcFps > 32 ? [srcFps, 30] : [srcFps];
 
   let chosen = null;
@@ -79,8 +81,8 @@ export function planForTarget({
     if (chosen) break;
   }
   if (!chosen) {
-    // Budget très serré : plus petite taille raisonnable, 30 i/s max.
-    const size = scaledSize(srcW, srcH, Math.min(capW, 320));
+    // Budget serré : plus petite taille raisonnable (ou la taille verrouillée), 30 i/s max.
+    const size = scaledSize(srcW, srcH, locked ?? Math.min(capW, 320));
     const f = Math.min(srcFps, 30);
     chosen = { ...size, fps: f, bpp: videoBps / (size.width * size.height * f) };
   }
@@ -99,6 +101,7 @@ export function planForTarget({
     quality,
     reducedResolution: chosen.width < even(srcW),
     reducedFps: chosen.fps < srcFps,
+    locked: Boolean(locked),
   };
 }
 

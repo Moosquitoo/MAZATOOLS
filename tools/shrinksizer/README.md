@@ -11,6 +11,7 @@ SHRINKSIZER compresse des vidéos directement dans le navigateur. Vous indiquez 
 - **Taille cible en Mo** : le débit est calculé à partir de la durée, de la place prise par le son et par le conteneur MP4. Si le résultat dépasse la cible, une nouvelle passe plus légère est lancée ; s'il reste beaucoup de marge, une passe de meilleure qualité est tentée. On garde toujours le meilleur fichier qui tient sous la cible.
 - **Choix automatique de la résolution** : si le budget est trop serré pour garder la 4K ou le 1080p sans artefacts, la vidéo est réduite (et passée de 60 à 30 i/s si besoin), ce qui donne une image bien plus nette qu'une pleine résolution trop compressée.
 - **Un champ et un curseur** pour choisir la taille, avec la valeur visée affichée au-dessus du curseur.
+- **Résolution verrouillable** : automatique (réduite seulement si nécessaire), originale, 2160p à 360p, ou une largeur exacte en pixels.
 - **Formats de sortie** : H.264 (lu partout), H.265 et AV1 (plus légers) quand le navigateur sait les encoder.
 - **Comparaison avant / après** avec un rideau à faire glisser sur l'image.
 - **Plusieurs fichiers** à la suite, glisser-déposer, sans limite de taille.

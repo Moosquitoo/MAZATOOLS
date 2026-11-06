@@ -18,6 +18,12 @@ const els = {
   bubble: $('#bubble'),
   codec: $('#codec'),
   codecNote: $('#codec-note'),
+  mirror: $('#target-mirror'),
+  res: $('#res'),
+  resField: $('.res-field'),
+  resHint: $('#res-hint'),
+  pxField: $('#px-field'),
+  customWidth: $('#custom-width'),
   notice: $('#support-notice'),
 };
 
@@ -74,17 +80,7 @@ function paintSlider(mb) {
   els.slider.style.setProperty('--ratio', String(ratio));
   els.bubble.textContent = fmtMB(mb);
   els.range.setAttribute('aria-valuetext', fmtMB(mb));
-  fitNumber();
-}
-
-/** Ajuste la largeur du champ au nombre affiché, pour que « Mo » reste collé. */
-const measureCtx = document.createElement('canvas').getContext('2d');
-function fitNumber() {
-  const cs = getComputedStyle(els.target);
-  measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  const text = String(els.target.value || '0');
-  const w = measureCtx.measureText(text).width + (parseFloat(cs.letterSpacing) || 0) * text.length;
-  els.target.style.width = `${Math.ceil(w) + 4}px`;
+  els.mirror.textContent = String(els.target.value || '0');
 }
 
 function onRangeInput() {
@@ -100,7 +96,9 @@ function onNumberInput() {
 }
 
 function saveSettings() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ targetMB: targetMB(), codec: els.codec.value })); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ targetMB: targetMB(), codec: els.codec.value, res: els.res.value, customWidth: customWidth() }));
+  } catch { /* ignore */ }
 }
 
 function restoreSettings() {
@@ -108,11 +106,41 @@ function restoreSettings() {
     const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (s?.targetMB) els.target.value = s.targetMB;
     if (s?.codec) els.codec.value = s.codec;
+    if (s?.res && [...els.res.options].some((o) => o.value === s.res)) els.res.value = s.res;
+    if (s?.customWidth) els.customWidth.value = s.customWidth;
   } catch { /* ignore */ }
 }
 
+const customWidth = () => Math.max(64, Math.round((parseInt(els.customWidth.value, 10) || 1280) / 2) * 2);
+
 function readSettings() {
-  return { mode: 'target', targetMB: targetMB(), codec: els.codec.value, removeAudio: false, maxWidth: Infinity };
+  return { mode: 'target', targetMB: targetMB(), codec: els.codec.value, res: els.res.value, customWidth: customWidth(), removeAudio: false, maxWidth: Infinity };
+}
+
+/** Largeur verrouillée pour une vidéo donnée (null = automatique). */
+function lockWidthFor(info, s) {
+  if (!info || s.res === 'auto') return null;
+  if (s.res === 'original') return info.width;
+  if (s.res === 'custom') return Math.min(info.width, s.customWidth);
+  const shortSide = Math.min(info.width, info.height);
+  return Math.round((info.width * Math.min(1, +s.res / shortSide)) / 2) * 2;
+}
+
+function settingsFor(item) {
+  const s = readSettings();
+  return { ...s, lockWidth: lockWidthFor(item.info, s) };
+}
+
+/** Empreinte des réglages, pour proposer « Recompresser » seulement s'ils ont changé. */
+const settingsKey = (s) => [s.targetMB, s.codec, s.res, s.res === 'custom' ? s.customWidth : ''].join('|');
+
+function updateResUi() {
+  const locked = els.res.value !== 'auto';
+  els.resField.classList.toggle('locked', locked);
+  els.pxField.hidden = els.res.value !== 'custom';
+  els.resHint.textContent = locked
+    ? "Résolution verrouillée : si la taille visée est petite, l'image sera plus compressée."
+    : 'La résolution est réduite seulement si la taille visée ne permet pas de garder une image nette.';
 }
 
 function effectiveCodec(wanted, item) {
@@ -122,6 +150,7 @@ function effectiveCodec(wanted, item) {
 
 function onSettingsChange() {
   updateCodecNote();
+  updateResUi();
   saveSettings();
   items.forEach((item) => { if (item.status !== 'encoding') renderItem(item); });
 }
@@ -267,14 +296,19 @@ function renderItem(item) {
   $('.remove', n).hidden = busy;
   $('.download', n).hidden = !done;
   $('.compare', n).hidden = !done;
-  $('.redo', n).hidden = !done || running || underTarget(item) || target === item.result?.targetMB;
+  $('.redo', n).hidden = !done || running || underTarget(item) || settingsKey(readSettings()) === item.result?.key;
   $('.item-progress', n).hidden = !busy;
 
   updateToolbar();
 }
 
 function planChips(plan, item) {
-  const out = [chip(`${plan.width}×${plan.height}`)];
+  const size = chip(`${plan.width}×${plan.height}`);
+  if (plan.locked) {
+    size.classList.add('locked');
+    size.insertAdjacentHTML('afterbegin', '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="verrouillée"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>');
+  }
+  const out = [size];
   if (plan.reducedFps) out.push(chip(`${plan.fps} i/s`));
   out.push(chip(CODEC_LABELS[plan.codec] ?? 'H.264'));
   if (plan.videoBps) out.push(chip(`${(plan.videoBps / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} Mb/s`));
@@ -292,6 +326,7 @@ function previewChips(item, target) {
     fps: item.info.fps,
     hasAudio: item.info.hasAudio,
     codec,
+    lockWidth: lockWidthFor(item.info, readSettings()),
   });
   if (!plan.ok) {
     item.blocked = true;
@@ -332,7 +367,7 @@ async function runAll() {
 }
 
 async function compressItem(item) {
-  const settings = readSettings();
+  const settings = settingsFor(item);
   item.controller = new AbortController();
   item.status = 'encoding';
   item.livePlan = null;
@@ -379,7 +414,7 @@ async function compressItem(item) {
 
   try {
     const result = await compress(item.file, item.info, settings, report, item.controller.signal);
-    item.result = { ...result, targetMB: settings.targetMB, seconds: (performance.now() - started) / 1000 };
+    item.result = { ...result, targetMB: settings.targetMB, key: settingsKey(settings), seconds: (performance.now() - started) / 1000 };
     item.status = 'done';
     item.resultUrl = URL.createObjectURL(result.blob);
     showResult(item);
@@ -412,7 +447,9 @@ function showResult(item) {
   if (overTarget) {
     note.append(document.createTextNode(' '), Object.assign(document.createElement('span'), {
       className: 'warn',
-      textContent: `Impossible de descendre sous ${fmtMB(target)} pour cette vidéo : visez un peu plus haut.`,
+      textContent: item.result.plan?.locked
+        ? `Impossible de descendre sous ${fmtMB(target)} en ${item.result.plan.width}×${item.result.plan.height} : visez plus haut ou baissez la résolution.`
+        : `Impossible de descendre sous ${fmtMB(target)} pour cette vidéo : visez un peu plus haut.`,
     }));
   }
 }
@@ -512,12 +549,13 @@ async function init() {
   restoreSettings();
   setupDrop();
   syncSlider();
-  document.fonts?.ready.then(fitNumber);
 
   els.range.addEventListener('input', onRangeInput);
   els.target.addEventListener('input', onNumberInput);
   els.target.addEventListener('change', () => { els.target.value = String(targetMB()); onNumberInput(); });
   els.codec.addEventListener('change', onSettingsChange);
+  els.res.addEventListener('change', () => { onSettingsChange(); if (els.res.value === 'custom') els.customWidth.focus(); });
+  els.customWidth.addEventListener('input', onSettingsChange);
   els.runAll.addEventListener('click', runAll);
   els.clearDone.addEventListener('click', () => items.filter((i) => i.status === 'done').forEach(removeItem));
   $('#theme').addEventListener('click', () => window.mazaTheme?.toggle());

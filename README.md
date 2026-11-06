@@ -5,8 +5,8 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | Outil | À quoi il sert |
 | --- | --- |
 | [SHRINKSIZER](tools/shrinksizer/) | Réduire une vidéo à la taille voulue (en Mo), avec la meilleure qualité possible |
-| [Nettoyeur vidéo](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
-| [Images PowerPoint](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation dans leur qualité d'origine |
+| [REMOVE AI FILTER](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
+| [Images PowerPoint & PDF](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation ou d'un PDF dans leur qualité d'origine |
 
 ## Liens
 
@@ -51,7 +51,7 @@ Toutes les pages partagent `shared/tokens.css` (couleurs claires et sombres, pol
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
 ```
 
-puis utilisez les variables `var(--bg)`, `var(--surface)`, `var(--text)`, `var(--muted)`, `var(--border)`, `var(--accent)`… dans son CSS. Le Nettoyeur vidéo sert de modèle. Si l'outil a son propre bouton de thème avec la classe `theme`, il est masqué automatiquement dans le hub ; branchez-le sur `window.mazaTheme.toggle()`.
+puis utilisez les variables `var(--bg)`, `var(--surface)`, `var(--text)`, `var(--muted)`, `var(--border)`, `var(--accent)`… dans son CSS. REMOVE AI FILTER (`tools/nettoyeur-video/`) sert de modèle. Si l'outil a son propre bouton de thème avec la classe `theme`, il est masqué automatiquement dans le hub ; branchez-le sur `window.mazaTheme.toggle()`.
 
 ## Tester en local
 
@@ -67,6 +67,6 @@ index.html, hub.css, hub.js   le site : barre latérale et affichage des outils
 tools.js                      la liste des outils (à modifier pour en ajouter)
 shared/                       thème commun : couleurs, police, clair / sombre
 tools/shrinksizer/            compresseur vidéo (voir son README)
-tools/nettoyeur-video/        nettoyeur de métadonnées (voir son README)
-tools/images-powerpoint/      extracteur d'images PowerPoint
+tools/nettoyeur-video/        REMOVE AI FILTER : retrait des Content Credentials
+tools/images-powerpoint/      extracteur d'images PowerPoint & PDF
 ```

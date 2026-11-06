@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Images PowerPoint</title>
-<meta name="description" content="Récupérez les images d'une présentation PowerPoint dans leur qualité d'origine, directement dans le navigateur.">
+<title>Images PowerPoint & PDF</title>
+<meta name="description" content="Récupérez les images d'une présentation PowerPoint ou d'un PDF dans leur qualité d'origine, directement dans le navigateur.">
 <script src="../../shared/theme.js"></script>
 <link rel="stylesheet" href="../../shared/tokens.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,6 +68,10 @@ button:disabled{opacity:.45;cursor:default}
 .file .info{min-width:0;flex:1}
 .file .name{font-weight:500;word-break:break-all}
 .file .meta{color:var(--muted);font-size:13px}
+.file.loading{flex-wrap:wrap;margin-top:0}
+.file .pct{flex:none;font-weight:500;font-size:15px}
+.file .progress{flex-basis:100%;height:6px;border-radius:3px;background:var(--chip);overflow:hidden}
+.file .progress div{height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .2s ease}
 
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 12px}
 .toolbar .left{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
@@ -160,26 +164,36 @@ details li{margin:4px 0}
   <header>
     <div class="brand">
       <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><g transform="translate(7 7) scale(.75)" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></g></svg>
-      <span>Images PowerPoint</span>
+      <span>Images PowerPoint &amp; PDF</span>
       <button class="theme" id="theme" type="button" aria-label="Changer de thème" title="Changer de thème">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
     </div>
-    <h1>Récupérez les images d'un PowerPoint</h1>
-    <p class="lead">Déposez une présentation pour voir toutes ses images, puis téléchargez celles que vous voulez dans leur qualité d'origine.</p>
+    <h1>Récupérez les images d'un PowerPoint ou d'un PDF</h1>
+    <p class="lead">Déposez un fichier pour voir toutes ses images, puis téléchargez celles que vous voulez dans leur qualité d'origine.</p>
   </header>
 
   <label class="drop" id="drop">
-    <input type="file" id="input" class="sr" accept=".pptx,.ppsx,.potx,.pptm,.docx,.xlsx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+    <input type="file" id="input" class="sr" accept=".pptx,.ppsx,.potx,.pptm,.pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
     <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
-    <strong>Déposez un fichier PowerPoint ici</strong>
-    <small>ou cliquez pour choisir. PPTX, PPSX, POTX (marche aussi avec Word et Excel)</small>
+    <strong>Déposez un PowerPoint ou un PDF ici</strong>
+    <small>ou cliquez pour choisir. PPTX, PPSX, POTX, PDF (marche aussi avec Word et Excel)</small>
   </label>
   <p class="message" id="message" hidden></p>
 
+  <section class="file loading" id="loading" hidden aria-live="polite">
+    <span class="doc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></span>
+    <div class="info">
+      <div class="name" id="load-name"></div>
+      <div class="meta" id="load-step"></div>
+    </div>
+    <span class="pct" id="load-pct">0 %</span>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="load-progress"><div id="load-bar"></div></div>
+  </section>
+
   <section id="result" hidden>
     <div class="file">
-      <span class="doc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+      <span class="doc" id="file-icon"></span>
       <div class="info">
         <div class="name" id="file-name"></div>
         <div class="meta" id="file-meta"></div>
@@ -199,15 +213,17 @@ details li{margin:4px 0}
 
   <footer>
     <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-    Tout se passe dans votre navigateur&nbsp;: la présentation n'est envoyée sur aucun serveur.</p>
+    Tout se passe dans votre navigateur&nbsp;: le fichier n'est envoyé sur aucun serveur.</p>
     <details>
       <summary>Bon à savoir</summary>
       <ul>
-        <li>Vous obtenez le fichier image exact rangé dans la présentation, sans recompression.</li>
+        <li>PowerPoint&nbsp;: vous obtenez le fichier image exact rangé dans la présentation, sans recompression.</li>
+        <li>PDF&nbsp;: les photos (JPEG) sont récupérées telles quelles&nbsp;; les autres images sont reconstituées en PNG, à leur définition d'origine.</li>
         <li>Si une image a été recadrée dans PowerPoint, c'est l'image complète, non recadrée, qui est récupérée.</li>
         <li>Si la présentation a été enregistrée avec l'option «&nbsp;Compresser les images&nbsp;», PowerPoint a déjà réduit leur définition&nbsp;: la qualité perdue ne peut pas être retrouvée.</li>
         <li>Les formats EMF et WMF (dessins vectoriels de Windows) ne s'affichent pas dans le navigateur mais peuvent être téléchargés.</li>
         <li>Les anciens fichiers .ppt ne sont pas pris en charge&nbsp;: ouvrez-les dans PowerPoint et enregistrez-les en .pptx.</li>
+        <li>Les PDF chiffrés (protégés contre la copie) et les images de scans noir et blanc (JBIG2, CCITT) ne sont pas pris en charge.</li>
       </ul>
     </details>
   </footer>
@@ -231,375 +247,6 @@ details li{margin:4px 0}
   </div>
 </dialog>
 
-<script>
-(() => {
-"use strict";
-
-const $ = (s, r = document) => r.querySelector(s);
-const els = {
-  drop: $("#drop"), input: $("#input"), message: $("#message"), result: $("#result"),
-  fileName: $("#file-name"), fileMeta: $("#file-meta"), change: $("#change"),
-  selectAll: $("#select-all"), hideSmall: $("#hide-small"), grid: $("#grid"), empty: $("#empty"),
-  dock: $("#dock"), dockCount: $("#dock-count"), download: $("#download"),
-  viewer: $("#viewer"), viewerImg: $("#viewer-img"), viewerTxt: $("#viewer-txt"), viewerDl: $("#viewer-dl"),
-};
-
-$("#theme").addEventListener("click", () => window.mazaTheme && window.mazaTheme.toggle());
-
-const MIME = {
-  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", jpe: "image/jpeg", gif: "image/gif",
-  bmp: "image/bmp", webp: "image/webp", svg: "image/svg+xml", tif: "image/tiff", tiff: "image/tiff",
-  avif: "image/avif", heic: "image/heic", emf: "image/emf", wmf: "image/wmf", wdp: "image/vnd.ms-photo", jxr: "image/vnd.ms-photo",
-};
-const PREVIEWABLE = new Set(["png", "jpg", "jpeg", "jpe", "gif", "bmp", "webp", "svg", "avif"]);
-const SMALL_PX = 300; // en dessous : icônes, puces, logos
-
-let state = { images: [], baseName: "", urls: [], slideCount: 0 };
-
-/* ---------- Utilitaires ---------- */
-
-function formatBytes(b) {
-  if (b < 1000) return `${b} o`;
-  const u = ["Ko", "Mo", "Go"]; let v = b / 1000, i = 0;
-  while (v >= 1000 && i < u.length - 1) { v /= 1000; i++; }
-  return `${v.toLocaleString("fr-FR", { maximumFractionDigits: v < 10 ? 1 : 0 })} ${u[i]}`;
-}
-const ext = (p) => (p.split(".").pop() || "").toLowerCase();
-const fileOf = (p) => p.split("/").pop();
-
-/** Résout un chemin relatif d'une relation (ex. "../media/image1.png" depuis "ppt/slides/"). */
-function resolve(baseDir, target) {
-  if (target.startsWith("/")) return target.slice(1);
-  const parts = baseDir.split("/").filter(Boolean);
-  for (const seg of target.split("/")) {
-    if (seg === "..") parts.pop();
-    else if (seg && seg !== ".") parts.push(seg);
-  }
-  return parts.join("/");
-}
-
-function parseXml(text) { return new DOMParser().parseFromString(text, "application/xml"); }
-
-async function readRels(zip, relsPath) {
-  const f = zip.file(relsPath);
-  if (!f) return [];
-  const doc = parseXml(await f.async("text"));
-  const baseDir = relsPath.replace(/_rels\/[^/]+$/, "");
-  return [...doc.getElementsByTagName("Relationship")]
-    .filter((r) => r.getAttribute("TargetMode") !== "External")
-    .map((r) => ({ id: r.getAttribute("Id"), type: r.getAttribute("Type") || "", target: resolve(baseDir, r.getAttribute("Target") || "") }));
-}
-
-/* ---------- Lecture de la présentation ---------- */
-
-/** Ordre réel des diapositives (celui de la présentation, pas celui des noms de fichiers). */
-async function slideOrder(zip) {
-  const pres = zip.file("ppt/presentation.xml");
-  if (!pres) return [];
-  const rels = await readRels(zip, "ppt/_rels/presentation.xml.rels");
-  const byId = new Map(rels.map((r) => [r.id, r.target]));
-  const doc = parseXml(await pres.async("text"));
-  const ids = [...doc.getElementsByTagNameNS("*", "sldId")];
-  return ids.map((el) => byId.get(el.getAttribute("r:id") || el.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id"))).filter(Boolean);
-}
-
-async function analyse(file) {
-  let zip;
-  try {
-    zip = await JSZip.loadAsync(file);
-  } catch {
-    throw new Error(/\.ppt$/i.test(file.name)
-      ? "Les anciens fichiers .ppt ne sont pas pris en charge. Ouvrez-le dans PowerPoint et enregistrez-le en .pptx."
-      : "Ce fichier n'est pas une présentation PowerPoint lisible (.pptx).");
-  }
-
-  // Toutes les images rangées dans les dossiers media (ppt/media, word/media, xl/media)
-  const media = Object.values(zip.files).filter((f) => !f.dir && /(^|\/)media\/[^/]+$/.test(f.name) && MIME[ext(f.name)]);
-
-  // Où chaque image est utilisée
-  const usage = new Map(); // chemin → { slides:Set<number>, template:boolean }
-  const use = (path) => { if (!usage.has(path)) usage.set(path, { slides: new Set(), template: false }); return usage.get(path); };
-
-  const order = await slideOrder(zip);
-  for (let i = 0; i < order.length; i++) {
-    const slide = order[i];
-    const relsPath = slide.replace(/([^/]+)$/, "_rels/$1.rels");
-    for (const r of await readRels(zip, relsPath)) use(r.target).slides.add(i + 1);
-  }
-  const templates = Object.keys(zip.files).filter((n) => /^ppt\/(slideLayouts|slideMasters)\/_rels\/[^/]+\.rels$/.test(n));
-  for (const relsPath of templates) {
-    for (const r of await readRels(zip, relsPath)) use(r.target).template = true;
-  }
-
-  const images = [];
-  for (const f of media) {
-    const e = ext(f.name);
-    const bytes = await f.async("uint8array");
-    const u = usage.get(f.name) || { slides: new Set(), template: false };
-    images.push({
-      path: f.name,
-      name: fileOf(f.name),
-      ext: e,
-      size: bytes.length,
-      blob: new Blob([bytes], { type: MIME[e] }),
-      slides: [...u.slides].sort((a, b) => a - b),
-      template: u.template,
-      width: 0,
-      height: 0,
-      selected: false,
-    });
-  }
-
-  // Ordre d'apparition dans la présentation, puis modèles, puis le reste
-  const rank = (img) => img.slides.length ? img.slides[0] : img.template ? 1e6 : 2e6;
-  images.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }));
-  return { images, slideCount: order.length };
-}
-
-/** Lit les dimensions réelles d'une image (0 si le navigateur ne sait pas l'afficher). */
-function measure(img, url) {
-  if (!PREVIEWABLE.has(img.ext)) return Promise.resolve();
-  return new Promise((done) => {
-    const el = new Image();
-    el.onload = () => { img.width = el.naturalWidth; img.height = el.naturalHeight; done(); };
-    el.onerror = () => { img.unreadable = true; done(); };
-    el.src = url;
-  });
-}
-
-/* ---------- Affichage ---------- */
-
-/** « 1, 2, 3, 7 » devient « 1 à 3, 7 ». */
-function ranges(nums) {
-  const out = [];
-  for (let i = 0; i < nums.length; i++) {
-    let j = i;
-    while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
-    out.push(j - i >= 2 ? `${nums[i]} à ${nums[j]}` : j > i ? `${nums[i]}, ${nums[j]}` : `${nums[i]}`);
-    i = j;
-  }
-  return out;
-}
-
-function whereLabel(img) {
-  if (img.slides.length && state.slideCount > 1 && img.slides.length === state.slideCount) return { text: "Toutes les diapos" };
-  if (img.slides.length === 1) return { text: `Diapo ${img.slides[0]}` };
-  if (img.slides.length > 1) {
-    const parts = ranges(img.slides);
-    const list = parts.length > 3 ? `${parts.slice(0, 3).join(", ")}…` : parts.join(", ");
-    return { text: `Diapos ${list}` };
-  }
-  if (img.template) return { text: "Modèle de diapositive" };
-  return { text: "Non utilisée", quiet: true };
-}
-
-function downloadName(img) {
-  const base = img.name.replace(/\.[^.]+$/, "");
-  const prefix = img.slides.length ? `diapo-${String(img.slides[0]).padStart(2, "0")}` : img.template ? "modele" : "autre";
-  return `${prefix}_${base}.${img.ext === "jpe" ? "jpg" : img.ext}`;
-}
-
-const isSmall = (img) => img.width > 0 && Math.max(img.width, img.height) < SMALL_PX;
-const visibleImages = () => state.images.filter((img) => !(els.hideSmall.checked && isSmall(img)));
-
-function card(img, index) {
-  const li = document.createElement("li");
-  li.className = "card";
-  li.dataset.index = String(index);
-
-  const label = document.createElement("label");
-  const input = Object.assign(document.createElement("input"), { type: "checkbox", checked: img.selected });
-  input.setAttribute("aria-label", `Sélectionner ${img.name}`);
-  input.addEventListener("change", () => { img.selected = input.checked; li.classList.toggle("selected", img.selected); updateSelection(); });
-
-  const thumb = document.createElement("div");
-  thumb.className = "thumb";
-  if (PREVIEWABLE.has(img.ext) && !img.unreadable) {
-    const im = Object.assign(document.createElement("img"), { src: img.url, alt: "", loading: "lazy", decoding: "async" });
-    thumb.append(im);
-  } else {
-    thumb.innerHTML = `<span class="noprev"><b>${img.ext.toUpperCase()}</b>Aperçu indisponible</span>`;
-  }
-  const tick = document.createElement("span");
-  tick.className = "tick";
-  tick.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
-  thumb.append(tick);
-
-  const details = document.createElement("div");
-  details.className = "details";
-  const dims = document.createElement("div");
-  dims.className = "dims";
-  dims.textContent = img.width ? `${img.width} × ${img.height}` : img.ext === "svg" ? "Vectoriel" : img.ext.toUpperCase();
-  const sub = document.createElement("div");
-  sub.className = "sub";
-  sub.append(...[img.ext.toUpperCase().replace("JPEG", "JPG"), formatBytes(img.size)].map((t) => Object.assign(document.createElement("span"), { textContent: t })));
-  const where = whereLabel(img);
-  const tag = Object.assign(document.createElement("span"), { className: `where${where.quiet ? " quiet" : ""}`, textContent: where.text });
-  details.append(dims, sub, tag);
-
-  label.append(input, thumb, details);
-  li.append(label);
-
-  const zoom = document.createElement("button");
-  zoom.type = "button";
-  zoom.className = "zoom";
-  zoom.setAttribute("aria-label", `Agrandir ${img.name}`);
-  zoom.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>';
-  zoom.addEventListener("click", () => openViewer(img));
-  if (!PREVIEWABLE.has(img.ext) || img.unreadable) zoom.hidden = true;
-  li.append(zoom);
-
-  li.classList.toggle("selected", img.selected);
-  return li;
-}
-
-function renderGrid() {
-  const list = visibleImages();
-  els.grid.replaceChildren(...list.map((img) => card(img, state.images.indexOf(img))));
-  const hidden = state.images.length - list.length;
-  els.empty.hidden = list.length > 0;
-  els.empty.textContent = state.images.length === 0
-    ? "Aucune image dans cette présentation."
-    : `Les ${hidden} image${hidden > 1 ? "s" : ""} de cette présentation sont petites : décochez « Masquer les petites images » pour les voir.`;
-  updateSelection();
-}
-
-function updateSelection() {
-  const visible = visibleImages();
-  const selected = state.images.filter((i) => i.selected);
-  const total = selected.reduce((s, i) => s + i.size, 0);
-  els.selectAll.checked = visible.length > 0 && visible.every((i) => i.selected);
-  els.selectAll.indeterminate = !els.selectAll.checked && visible.some((i) => i.selected);
-  els.dock.hidden = selected.length === 0;
-  els.dockCount.innerHTML = "";
-  els.dockCount.append(
-    document.createTextNode(`${selected.length} image${selected.length > 1 ? "s" : ""} sélectionnée${selected.length > 1 ? "s" : ""}`),
-    Object.assign(document.createElement("small"), { textContent: formatBytes(total) }),
-  );
-  els.download.textContent = selected.length > 1 ? "Télécharger en .zip" : "Télécharger";
-}
-
-function showMessage(text, kind) {
-  els.message.hidden = !text;
-  els.message.textContent = text || "";
-  els.message.className = `message ${kind || ""}`;
-}
-
-/* ---------- Téléchargement ---------- */
-
-function save(blob, name) {
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), { href: url, download: name });
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
-}
-
-async function downloadSelected() {
-  const selected = state.images.filter((i) => i.selected);
-  if (!selected.length) return;
-  if (selected.length === 1) { save(selected[0].blob, downloadName(selected[0])); return; }
-
-  els.download.disabled = true;
-  els.download.textContent = "Préparation…";
-  try {
-    const zip = new JSZip();
-    const used = new Set();
-    for (const img of selected) {
-      let name = downloadName(img);
-      for (let n = 2; used.has(name); n++) name = downloadName(img).replace(/(\.[^.]+)$/, `-${n}$1`);
-      used.add(name);
-      zip.file(name, img.blob);
-    }
-    // Les images sont déjà compressées : on les range telles quelles (plus rapide, même poids).
-    const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
-    save(blob, `${state.baseName} - images.zip`);
-  } finally {
-    els.download.disabled = false;
-    updateSelection();
-  }
-}
-
-/* ---------- Agrandissement ---------- */
-
-function openViewer(img) {
-  els.viewerImg.src = img.url;
-  els.viewerImg.alt = img.name;
-  els.viewerTxt.innerHTML = "";
-  const b = Object.assign(document.createElement("b"), { textContent: img.width ? `${img.width} × ${img.height}` : img.ext.toUpperCase() });
-  els.viewerTxt.append(b, document.createTextNode(`, ${formatBytes(img.size)}, ${whereLabel(img).text.toLowerCase()}`));
-  els.viewerDl.href = img.url;
-  els.viewerDl.download = downloadName(img);
-  els.viewer.showModal();
-}
-$("#viewer-close").addEventListener("click", () => els.viewer.close());
-els.viewer.addEventListener("click", (e) => { if (e.target === els.viewer) els.viewer.close(); });
-
-/* ---------- Ouverture d'un fichier ---------- */
-
-function reset() {
-  state.urls.forEach((u) => URL.revokeObjectURL(u));
-  state = { images: [], baseName: "", urls: [], slideCount: 0 };
-  els.grid.replaceChildren();
-  els.result.hidden = true;
-  els.dock.hidden = true;
-  els.selectAll.checked = false;
-}
-
-async function open(file) {
-  reset();
-  els.drop.hidden = false;
-  showMessage(`Lecture de ${file.name}…`, "work");
-  try {
-    const { images, slideCount } = await analyse(file);
-    state.images = images;
-    state.slideCount = slideCount;
-    state.baseName = file.name.replace(/\.[^.]+$/, "");
-    for (const img of images) { img.url = URL.createObjectURL(img.blob); state.urls.push(img.url); }
-    await Promise.all(images.map((img) => measure(img, img.url)));
-
-    const total = images.reduce((s, i) => s + i.size, 0);
-    els.fileName.textContent = file.name;
-    const parts = [];
-    if (slideCount) parts.push(`${slideCount} diapo${slideCount > 1 ? "s" : ""}`);
-    parts.push(`${images.length} image${images.length > 1 ? "s" : ""}`, `${formatBytes(total)} d'images`);
-    els.fileMeta.textContent = parts.join(", ");
-
-    showMessage("");
-    els.drop.hidden = true;
-    els.result.hidden = false;
-    renderGrid();
-  } catch (err) {
-    console.error(err);
-    showMessage(err.message || "Impossible de lire ce fichier.", "err");
-  }
-}
-
-els.input.addEventListener("change", () => { if (els.input.files[0]) open(els.input.files[0]); els.input.value = ""; });
-els.change.addEventListener("click", () => els.input.click());
-els.selectAll.addEventListener("change", () => {
-  for (const img of visibleImages()) img.selected = els.selectAll.checked;
-  renderGrid();
-});
-els.hideSmall.addEventListener("change", () => {
-  if (els.hideSmall.checked) state.images.forEach((i) => { if (isSmall(i)) i.selected = false; });
-  renderGrid();
-});
-els.download.addEventListener("click", downloadSelected);
-
-// Glisser-déposer n'importe où sur la page
-let depth = 0;
-const over = (on) => els.drop.classList.toggle("over", on);
-window.addEventListener("dragenter", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) { depth++; over(true); } });
-window.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) over(false); });
-window.addEventListener("dragover", (e) => e.preventDefault());
-window.addEventListener("drop", (e) => {
-  e.preventDefault(); depth = 0; over(false);
-  const f = e.dataTransfer && e.dataTransfer.files[0];
-  if (f) open(f);
-});
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

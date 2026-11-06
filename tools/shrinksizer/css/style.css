@@ -41,15 +41,20 @@ h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.02em;margin:
 .target{margin-top:14px;padding:20px 20px 16px}
 .label{display:block;font-size:13px;font-weight:500;color:var(--muted)}
 
-.target-value{display:flex;align-items:baseline;gap:6px;margin:2px 0 30px}
-.target-value input{
-  width:3ch;min-width:1.6ch;border:0;padding:0;background:transparent;color:var(--text);
-  font:inherit;font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.1;
-  border-bottom:1.5px solid transparent;-moz-appearance:textfield;
+.target-value{display:flex;align-items:baseline;gap:8px;margin:2px 0 30px}
+/* Le nombre est doublé par un miroir invisible : le champ prend exactement la largeur
+   du texte affiché, quelle que soit la police chargée. */
+.num{position:relative;display:inline-block;font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.mirror{display:block;visibility:hidden;white-space:pre;padding-right:2px;min-width:1ch;font:inherit;letter-spacing:inherit}
+.num input{
+  position:absolute;inset:0;width:100%;height:100%;
+  font:inherit;letter-spacing:inherit;line-height:inherit;
+  border:0;padding:0;margin:0;background:transparent;color:var(--text);
+  border-bottom:1.5px solid transparent;border-radius:0;-moz-appearance:textfield;appearance:textfield;
 }
-.target-value input:hover{border-bottom-color:var(--border-strong)}
-.target-value input:focus{outline:none;border-bottom-color:var(--accent)}
-.target-value input::-webkit-outer-spin-button,.target-value input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.num input:hover{border-bottom-color:var(--border-strong)}
+.num input:focus{outline:none;border-bottom-color:var(--accent)}
+.num input::-webkit-outer-spin-button,.num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .unit{font-size:20px;font-weight:500;color:var(--muted)}
 
 /* Curseur : la bulle suit le rond et affiche la taille visée */
@@ -88,14 +93,23 @@ h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.02em;margin:
 .slider input:focus-visible::-moz-range-thumb{outline:2px solid var(--accent);outline-offset:2px}
 .range-ends{display:flex;justify-content:space-between;margin-top:4px;color:var(--muted);font-size:12.5px}
 
-.codec-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:13.5px}
-.codec-row label{color:var(--muted)}
-.codec-row select{
+.options{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:13.5px}
+.option{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.option > label{color:var(--muted)}
+.option select,.px-field input{
   font:inherit;color:var(--text);background:var(--surface-2);
   border:1px solid var(--border);border-radius:9px;padding:6px 10px;
 }
-.codec-note{color:var(--muted);font-size:12.5px;flex-basis:100%}
-.codec-note:empty{display:none}
+.res-field{position:relative;display:inline-flex;align-items:center}
+.res-field .lock{position:absolute;left:10px;color:var(--muted);pointer-events:none}
+.res-field select{padding-left:31px}
+.res-field.locked select{border-color:var(--accent);background:var(--accent-soft)}
+.res-field.locked .lock{color:var(--accent)}
+.res-field:not(.locked) .shackle{transform:translateX(-4px) translateY(-1px)}
+.px-field{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.px-field input{width:88px}
+.hint{flex-basis:100%;margin:0;color:var(--muted);font-size:12.5px}
+.hint:empty{display:none}
 
 /* ---------- Boutons ---------- */
 button,.primary,.ghost{
@@ -146,6 +160,7 @@ button:disabled{opacity:.45;cursor:default}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .chips:empty{display:none}
 .chip{font-size:12px;padding:3px 9px;border-radius:7px;background:var(--chip);color:var(--text)}
+.chip.locked{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent)}
 .chip.quiet{background:transparent;color:var(--muted);padding-inline:2px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
 .note:empty{display:none}
@@ -185,7 +200,7 @@ details li{margin:4px 0}
 @media (max-width:520px){
   h1{font-size:25px}
   .toolbar{flex-wrap:wrap}
-  .target-value input{font-size:38px}
+  .num{font-size:38px}
 }
 @media (prefers-reduced-motion:reduce){
   .item{animation:none}

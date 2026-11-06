@@ -1,4 +1,4 @@
-# Nettoyeur vidéo
+# REMOVE AI FILTER
 
 Page web qui retire les **Content Credentials (C2PA)**, les métadonnées **Adobe XMP** et les autres métadonnées de fichier des vidéos MP4 / MOV / M4V.
 

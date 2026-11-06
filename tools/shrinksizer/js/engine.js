@@ -167,7 +167,7 @@ export async function compress(file, info, settings, report, signal) {
     hasAudio: info.hasAudio,
     removeAudio,
     codec: settings.codec,
-    maxWidth: settings.maxWidth || Infinity,
+    maxWidth: settings.maxWidth || Infinity, lockWidth: settings.lockWidth,
   });
   if (!plan.ok) {
     const err = new Error(`Taille trop petite pour cette vidéo. Minimum conseillé : ${(plan.minBytes / MB).toFixed(1)} Mo.`);
@@ -179,7 +179,7 @@ export async function compress(file, info, settings, report, signal) {
   if (!codec) return ffmpegEngine.compress(file, info, settings, report, signal);
   if (codec !== settings.codec) {
     // Le codec demandé n'est pas dispo : on recalcule pour H.264.
-    plan = planForTarget({ targetBytes, duration: info.duration, srcW: info.width, srcH: info.height, fps: info.fps, hasAudio: info.hasAudio, removeAudio, codec, maxWidth: settings.maxWidth || Infinity });
+    plan = planForTarget({ targetBytes, duration: info.duration, srcW: info.width, srcH: info.height, fps: info.fps, hasAudio: info.hasAudio, removeAudio, codec, maxWidth: settings.maxWidth || Infinity, lockWidth: settings.lockWidth });
   }
   plan.codec = codec;
 
