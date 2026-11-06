@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SHRINKSIZER</title>
+  <meta name="description" content="Réduisez une vidéo à la taille voulue, directement dans le navigateur. Aucun envoi sur un serveur.">
+  <script src="../../shared/theme.js"></script>
+  <link rel="stylesheet" href="../../shared/tokens.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "mediabunny": "./vendor/mediabunny.min.mjs",
+        "mediabunny-aac-encoder": "./vendor/mediabunny-aac-encoder.min.mjs"
+      }
+    }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><g transform="translate(7 7) scale(.75)" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></g></svg>
+      <span>SHRINKSIZER</span>
+      <button class="theme" id="theme" type="button" aria-label="Changer de thème" title="Changer de thème">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+    <h1>Réduisez vos vidéos à la taille voulue</h1>
+    <p class="lead">Choisissez un poids maximal&nbsp;: SHRINKSIZER calcule le réglage qui garde la meilleure image possible pour le tenir.</p>
+  </header>
+
+  <p class="notice" id="support-notice" hidden></p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file-input" class="sr" multiple accept="video/*,.mkv,.avi,.mov,.mpg,.mpeg,.wmv,.flv,.3gp,.ts,.m2ts,.mts,.webm">
+    <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
+    <strong>Déposez vos vidéos ici</strong>
+    <small>ou cliquez pour choisir. MP4, MOV, WebM, MKV, AVI, MPEG…</small>
+  </label>
+
+  <section class="card target" aria-labelledby="target-label">
+    <label id="target-label" for="target-mb" class="label">Taille visée</label>
+    <div class="target-value">
+      <input type="number" id="target-mb" min="0.1" step="0.1" value="25" inputmode="decimal">
+      <span class="unit">Mo</span>
+    </div>
+
+    <div class="slider">
+      <output class="bubble" id="bubble" for="target-range" aria-hidden="true">25 Mo</output>
+      <input type="range" id="target-range" min="0" max="1000" step="1" aria-label="Taille visée">
+    </div>
+    <div class="range-ends"><span>Plus léger</span><span>Plus fidèle</span></div>
+
+    <div class="codec-row">
+      <label for="codec">Format</label>
+      <select id="codec">
+        <option value="avc" selected>H.264 (compatible)</option>
+        <option value="hevc">H.265 (plus léger)</option>
+        <option value="av1">AV1 (le plus léger)</option>
+      </select>
+      <span class="codec-note" id="codec-note"></span>
+    </div>
+  </section>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <span class="count" id="count"></span>
+    <div class="btns">
+      <button type="button" class="ghost" id="clear-done">Retirer les terminés</button>
+      <button type="button" class="primary" id="run-all">Tout compresser</button>
+    </div>
+  </div>
+  <ul id="items"></ul>
+
+  <footer>
+    <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Tout se passe dans votre navigateur&nbsp;: aucune vidéo n'est envoyée sur un serveur.</p>
+    <details>
+      <summary>Comment la taille est tenue</summary>
+      <ul>
+        <li>Le débit est calculé à partir de la durée, en réservant la place du son et du conteneur MP4.</li>
+        <li>Si ce débit est trop faible pour la résolution d'origine, la vidéo est réduite (et passée à 30 images/s si besoin)&nbsp;: une image plus petite mais nette vaut mieux qu'une grande pleine de blocs.</li>
+        <li>Si le fichier obtenu dépasse la cible, une nouvelle passe plus légère est lancée. S'il reste beaucoup de marge, une passe de meilleure qualité est tentée.</li>
+        <li>L'encodage utilise la carte graphique via WebCodecs (<a href="https://mediabunny.dev">Mediabunny</a>). Les formats anciens (AVI, MPEG, WMV…) passent par <a href="https://ffmpegwasm.netlify.app">ffmpeg.wasm</a>, plus lent, téléchargé seulement si besoin.</li>
+      </ul>
+    </details>
+  </footer>
+</main>
+
+<template id="item-template">
+  <li class="item" data-status="probing">
+    <div class="row">
+      <span class="name"></span>
+      <span class="status work"></span>
+    </div>
+    <div class="sizes"></div>
+
+    <div class="gauge" aria-hidden="true">
+      <div class="gauge-track">
+        <div class="gauge-fill"></div>
+        <div class="gauge-target"><span></span></div>
+      </div>
+    </div>
+
+    <div class="chips"></div>
+    <div class="item-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden>
+      <div class="bar"><div></div></div>
+      <p class="progress-text" aria-live="polite"></p>
+    </div>
+    <p class="note" aria-live="polite"></p>
+
+    <div class="compare-panel" hidden>
+      <div class="compare-stage">
+        <video class="v-after" muted playsinline preload="metadata"></video>
+        <video class="v-before" muted playsinline preload="metadata"></video>
+        <div class="compare-divider"></div>
+        <span class="compare-tag before">Avant</span>
+        <span class="compare-tag after">Après</span>
+      </div>
+      <div class="compare-controls">
+        <button type="button" class="ghost play">Lire</button>
+        <label class="compare-slider">
+          <span class="sr">Position du rideau avant / après</span>
+          <input type="range" min="0" max="100" value="50">
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="ghost remove">Retirer</button>
+      <button type="button" class="ghost compare" hidden aria-expanded="false">Comparer</button>
+      <button type="button" class="ghost cancel" hidden>Annuler</button>
+      <button type="button" class="ghost redo" hidden>Recompresser</button>
+      <button type="button" class="primary compress">Compresser</button>
+      <a class="primary download" hidden>Télécharger</a>
+    </div>
+  </li>
+</template>
+</body>
+</html>

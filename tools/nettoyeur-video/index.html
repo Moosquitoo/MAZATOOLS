@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nettoyeur vidéo</title>
+<meta name="description" content="Retire les Content Credentials (C2PA) et les métadonnées Adobe de vos vidéos MP4 / MOV, directement dans le navigateur.">
+<script src="../../shared/theme.js"></script>
+<link rel="stylesheet" href="../../shared/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f3d35'/%3E%3Cg transform='translate(7 7) scale(.75)' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 21H8a2 2 0 0 1-1.42-.59l-3-3a2 2 0 0 1 0-2.82l10-10a2 2 0 0 1 2.83 0l4.59 4.58a2 2 0 0 1 0 2.83L13 21'/%3E%3Cpath d='M8.5 10.5l5 5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+main{max-width:680px;margin:0 auto;padding:56px 16px 48px}
+header{margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand svg{flex:none}
+.brand span{font-weight:500;color:var(--muted);font-size:13px;letter-spacing:.02em}
+h1{font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.02em;margin:0 0 10px}
+.lead{color:var(--muted);margin:0;max-width:52ch}
+
+.drop{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  min-height:200px;padding:28px 20px;text-align:center;cursor:pointer;
+  background:var(--surface);border:1.5px dashed var(--border-strong);border-radius:16px;
+  transition:border-color .15s,background .15s,transform .15s;
+}
+.drop:hover{border-color:var(--muted)}
+.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.drop.over{border-color:var(--accent);border-style:solid;background:var(--accent-soft);transform:scale(1.005)}
+.drop .icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.drop strong{font-weight:500;font-size:16px}
+.drop small{color:var(--muted);font-size:13px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 10px}
+.toolbar[hidden]{display:none}
+.toolbar .count{color:var(--muted);font-size:13px}
+.toolbar .btns{display:flex;gap:8px}
+
+button{
+  font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;border-radius:9px;
+  padding:8px 14px;border:1px solid transparent;transition:opacity .15s,background .15s;
+}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.primary:hover{opacity:.88}
+.ghost{background:transparent;color:var(--muted);border-color:var(--border)}
+.ghost:hover{color:var(--text);border-color:var(--border-strong)}
+button:disabled{opacity:.45;cursor:default}
+
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);animation:in .25s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(4px)}}
+.row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.name{font-weight:500;word-break:break-all;min-width:0}
+.status{flex:none;font-size:12px;font-weight:500;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.status.work{background:var(--chip);color:var(--muted)}
+.status.ok{background:var(--ok-bg);color:var(--ok)}
+.status.warn{background:var(--warn-bg);color:var(--warn)}
+.status.err{background:var(--err-bg);color:var(--err)}
+.sizes{color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chips:empty{display:none}
+.chip{font-size:12px;padding:3px 9px;border-radius:7px;background:var(--chip);color:var(--text)}
+.chip.ai{background:var(--chip-ai);color:var(--chip-ai-ink)}
+.chip s{color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.actions{display:flex;justify-content:flex-end;margin-top:14px}
+.actions:empty{display:none}
+
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+footer p{margin:0 0 12px;display:flex;gap:8px;align-items:flex-start}
+footer svg{flex:none;margin-top:2px}
+details{margin-top:4px}
+summary{cursor:pointer;color:var(--text);font-weight:500;width:fit-content}
+details ul{display:block;margin:10px 0 0;padding-left:18px;list-style:disc}
+details li{margin:4px 0}
+.theme{margin-left:auto;width:34px;height:34px;padding:0;display:grid;place-items:center;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.theme:hover{color:var(--text)}
+
+@media (max-width:520px){
+  h1{font-size:25px}
+  .toolbar{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><g transform="translate(7 7) scale(.75)" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H8a2 2 0 0 1-1.42-.59l-3-3a2 2 0 0 1 0-2.82l10-10a2 2 0 0 1 2.83 0l4.59 4.58a2 2 0 0 1 0 2.83L13 21"/><path d="M8.5 10.5l5 5"/></g></svg>
+      <span>Nettoyeur vidéo</span>
+      <button class="theme" id="theme" aria-label="Changer de thème" title="Changer de thème">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+    <h1>Retirez les Content Credentials de vos vidéos</h1>
+    <p class="lead">Supprime le manifeste C2PA, les métadonnées Adobe (XMP) et les autres informations de fichier, sans réencoder la vidéo. La qualité est identique.</p>
+  </header>
+
+  <label class="drop" id="drop">
+    <input type="file" id="input" class="sr" multiple accept=".mp4,.mov,.m4v,video/mp4,video/quicktime">
+    <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+    <strong>Déposez vos vidéos ici</strong>
+    <small>ou cliquez pour choisir · MP4, MOV, M4V</small>
+  </label>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <span class="count" id="count"></span>
+    <div class="btns">
+      <button class="ghost" id="clear">Vider</button>
+      <button class="primary" id="all">Tout télécharger</button>
+    </div>
+  </div>
+  <ul id="list"></ul>
+
+  <footer>
+    <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Tout se passe dans votre navigateur : aucune vidéo n'est envoyée sur un serveur.</p>
+    <details>
+      <summary>Ce qui est retiré</summary>
+      <ul>
+        <li>Le manifeste C2PA / Content Credentials (outil utilisé, mentions d'IA générative, historique)</li>
+        <li>Les métadonnées XMP d'Adobe et les blocs <span class="mono">udta</span> / <span class="mono">meta</span></li>
+        <li>Les dates de création et le nom de l'encodeur</li>
+      </ul>
+      <p style="margin-top:10px">Seules les métadonnées du fichier sont touchées. Un éventuel filigrane invisible intégré dans l'image elle-même n'est pas modifié. Formats fragmentés (streaming) non pris en charge.</p>
+    </details>
+  </footer>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- Thème ---------- */
+// Géré par shared/theme.js (commun à MAZATOOLS) ; bouton masqué quand l'outil est ouvert dans le hub.
+document.getElementById("theme").addEventListener("click", () => window.mazaTheme.toggle());
+
+/* ---------- Lecture des boîtes MP4 / MOV ---------- */
+const C2PA_UUID = "d8fec3d61b0e483c92975828877ec481";
+const XMP_UUID  = "be7acfcb97a942e89c71999491e3afac";
+const CONTAINERS = new Set(["moov","trak","mdia","minf","stbl","edts","dinf","mvex"]);
+const DROP_INNER = new Set(["udta","meta","uuid","free","skip","wide","XMP_","c2pa"]);
+const DROP_TOP   = new Set(["free","skip","wide","udta","meta","c2pa","pnot","PICT","junk"]);
+const FRAGMENTED = new Set(["moof","mfra","sidx","styp","ssix"]);
+
+const fourcc = (u8, o) => String.fromCharCode(u8[o], u8[o+1], u8[o+2], u8[o+3]);
+const hex = u8 => Array.from(u8, b => b.toString(16).padStart(2, "0")).join("");
+const latin1 = u8 => { let s = ""; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return s; };
+const readBytes = async (file, start, len) => new Uint8Array(await file.slice(start, start + len).arrayBuffer());
+
+async function topLevelBoxes(file) {
+  const boxes = []; const N = file.size; let off = 0;
+  while (N - off >= 8) {
+    const h = await readBytes(file, off, 32);
+    const dv = new DataView(h.buffer);
+    let size = dv.getUint32(0), hdr = 8;
+    const type = fourcc(h, 4);
+    if (size === 1) { size = Number(dv.getBigUint64(8)); hdr = 16; }
+    else if (size === 0) size = N - off;
+    if (size < hdr || off + size > N) {
+      if (boxes.length && N - off < 64) break;           // octets parasites en fin de fichier
+      throw new Error("Fichier invalide ou tronqué.");
+    }
+    const box = { type, start: off, size, hdr };
+    if (type === "uuid") box.uuid = hex(h.subarray(hdr, hdr + 16));
+    boxes.push(box);
+    off += size;
+  }
+  return boxes;
+}
+
+function children(u8, start, end) {
+  const out = []; const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let o = start;
+  while (end - o >= 8) {
+    let size = dv.getUint32(o), hdr = 8;
+    const type = fourcc(u8, o + 4);
+    if (size === 1) { size = Number(dv.getBigUint64(o + 8)); hdr = 16; }
+    else if (size === 0) size = end - o;
+    if (size < hdr || o + size > end) break;
+    out.push({ type, start: o, size, hdr });
+    o += size;
+  }
+  return out;
+}
+
+function makeBox(type, parts) {
+  const len = 8 + parts.reduce((s, p) => s + p.length, 0);
+  const out = new Uint8Array(len);
+  new DataView(out.buffer).setUint32(0, len);
+  for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+  let o = 8; for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+const anyNonZero = (u8, a, b) => { for (let i = a; i < b && i < u8.length; i++) if (u8[i]) return true; return false; };
+
+function trackHandler(u8, trak) {
+  for (const m of children(u8, trak.start + trak.hdr, trak.start + trak.size))
+    if (m.type === "mdia")
+      for (const h of children(u8, m.start + m.hdr, m.start + m.size))
+        if (h.type === "hdlr") return fourcc(u8, h.start + h.hdr + 8);
+  return "";
+}
+
+function cleanContainer(u8, box, handler, rep) {
+  if (box.type === "trak") handler = trackHandler(u8, box);
+  const parts = [];
+  for (const k of children(u8, box.start + box.hdr, box.start + box.size)) {
+    if (DROP_INNER.has(k.type)) { noteDropped(u8.subarray(k.start, k.start + k.size), k.type, rep); continue; }
+    parts.push(CONTAINERS.has(k.type) ? cleanContainer(u8, k, handler, rep) : cleanLeaf(u8, k, handler, rep));
+  }
+  return makeBox(box.type, parts);
+}
+
+function cleanLeaf(u8, k, handler, rep) {
+  let b = u8.slice(k.start, k.start + k.size);
+  const h = k.hdr;
+  if (k.type === "mvhd" || k.type === "tkhd" || k.type === "mdhd") {
+    const n = b[h] === 1 ? 8 : 4;
+    if (anyNonZero(b, h + 4, h + 4 + 2 * n)) rep.dates = true;
+    b.fill(0, h + 4, h + 4 + 2 * n);
+  } else if (k.type === "hdlr") {
+    const nameAt = h + 24;
+    if (b.length > nameAt + 1 && anyNonZero(b, nameAt, b.length)) {
+      rep.encoder = true;
+      b = makeBox("hdlr", [b.slice(h, nameAt), new Uint8Array(1)]);
+    }
+  } else if (k.type === "stsd" && handler === "vide") {
+    const dv = new DataView(b.buffer);
+    const count = dv.getUint32(h + 4); let o = h + 8;
+    for (let i = 0; i < count && o + 8 <= b.length; i++) {
+      const es = dv.getUint32(o);
+      if (es >= 86 && o + es <= b.length) {
+        if (anyNonZero(b, o + 50, o + 82)) rep.encoder = true;
+        b.fill(0, o + 50, o + 82);   // nom du compresseur
+        b.fill(0, o + 20, o + 24);   // code du fabricant / logiciel
+      }
+      if (es < 8) break;
+      o += es;
+    }
+  }
+  return b;
+}
+
+const AI_TYPES = [
+  ["compositeWithTrainedAlgorithmicMedia", "Contient des éléments générés par IA"],
+  ["trainedAlgorithmicMedia", "Généré par IA"],
+  ["compositeSynthetic", "Composite synthétique"],
+  ["algorithmicMedia", "Média algorithmique"],
+];
+
+function noteDropped(bytes, type, rep) {
+  const s = latin1(bytes);
+  if (type === "c2pa" || s.includes("c2pa")) inspectC2PA(s, bytes.length, rep);
+  if (s.includes("xmpmeta") || type === "XMP_") rep.xmp = true;
+  if (type === "udta" || type === "meta") rep.meta = true;
+  const tool = s.match(/<xmp:CreatorTool>([^<]{1,80})</);
+  if (tool) rep.tools.add(tool[1].trim());
+}
+
+function inspectC2PA(s, size, rep) {
+  rep.c2pa = (rep.c2pa || 0) + size;
+  let rest = s;
+  for (const [key, label] of AI_TYPES) {
+    if (rest.includes(key)) { rep.ai.add(label); rest = rest.split(key).join(""); }
+  }
+  for (const m of s.matchAll(/Adobe (Firefly|Premiere Pro|After Effects|Photoshop|Media Encoder|Express|Illustrator|Lightroom)/g))
+    rep.tools.add("Adobe " + m[1]);
+}
+
+function* offsetTables(u8, start, end) {
+  for (const k of children(u8, start, end)) {
+    if (k.type === "stco" || k.type === "co64") yield k;
+    else if (CONTAINERS.has(k.type)) yield* offsetTables(u8, k.start + k.hdr, k.start + k.size);
+  }
+}
+
+function layout(kept, moovSize, faststart) {
+  const order = faststart
+    ? [...kept.filter(b => b.type === "ftyp"), ...kept.filter(b => b.type === "moov"), ...kept.filter(b => b.type !== "ftyp" && b.type !== "moov")]
+    : kept;
+  let pos = 0;
+  return { order: order.map(b => { const m = { b, newStart: pos }; pos += b.type === "moov" ? moovSize : b.size; return m; }), total: pos };
+}
+
+function patchOffsets(moov, map) {
+  const out = moov.slice();
+  const dv = new DataView(out.buffer);
+  const ranges = map.filter(m => m.b.type !== "moov");
+  const remap = o => {
+    for (const m of ranges) if (o >= m.b.start && o < m.b.start + m.b.size) return o - m.b.start + m.newStart;
+    throw new Error("Index d'échantillons incohérent.");
+  };
+  for (const t of offsetTables(out, 8, out.length)) {
+    const h = t.start + t.hdr, n = dv.getUint32(h + 4);
+    if (t.type === "stco") {
+      for (let i = 0; i < n; i++) {
+        const p = h + 8 + i * 4, v = remap(dv.getUint32(p));
+        if (v > 0xFFFFFFFF) return null;
+        dv.setUint32(p, v);
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        const p = h + 8 + i * 8;
+        dv.setBigUint64(p, BigInt(remap(Number(dv.getBigUint64(p)))));
+      }
+    }
+  }
+  return out;
+}
+
+async function cleanFile(file) {
+  const rep = { c2pa: 0, xmp: false, meta: false, dates: false, encoder: false, otherUuid: 0, ai: new Set(), tools: new Set() };
+  const boxes = await topLevelBoxes(file);
+  if (boxes.some(b => FRAGMENTED.has(b.type))) throw new Error("Vidéo fragmentée (streaming) : format non pris en charge.");
+  const moovBox = boxes.find(b => b.type === "moov");
+  if (!moovBox || !boxes.some(b => b.type === "mdat")) throw new Error("Ce fichier n'est pas une vidéo MP4 / MOV lisible.");
+
+  const kept = [];
+  for (const b of boxes) {
+    if (b.type === "uuid") {
+      const bytes = await readBytes(file, b.start, b.size);
+      if (b.uuid === C2PA_UUID) inspectC2PA(latin1(bytes), b.size, rep);
+      else if (b.uuid === XMP_UUID) noteDropped(bytes, "XMP_", rep);
+      else { rep.otherUuid++; noteDropped(bytes, "uuid", rep); }
+    } else if (DROP_TOP.has(b.type)) {
+      if (b.size < 50e6) noteDropped(await readBytes(file, b.start, b.size), b.type, rep);
+    } else kept.push(b);
+  }
+
+  const moovIn = await readBytes(file, moovBox.start, moovBox.size);
+  const moovClean = cleanContainer(moovIn, { type: "moov", start: 0, size: moovIn.length, hdr: moovBox.hdr }, "", rep);
+
+  let plan = layout(kept, moovClean.length, true);
+  let moovOut = patchOffsets(moovClean, plan.order);
+  if (!moovOut) { plan = layout(kept, moovClean.length, false); moovOut = patchOffsets(moovClean, plan.order); }
+  if (!moovOut) throw new Error("Fichier trop volumineux pour être réorganisé.");
+
+  const parts = plan.order.map(m => m.b.type === "moov" ? moovOut : file.slice(m.b.start, m.b.start + m.b.size));
+  const blob = new Blob(parts, { type: file.type || "video/mp4" });
+
+  // Vérification : plus aucune trace dans les en-têtes du fichier produit
+  const headerText = latin1(moovOut) + latin1(await readBytes(file, kept[0].start, Math.min(kept[0].size, 4096)));
+  const leftover = /c2pa|jumbf|xmpmeta|Firefly|contentauth/i.test(headerText);
+  return { blob, rep, leftover };
+}
+
+/* ---------- Interface ---------- */
+const $ = id => document.getElementById(id);
+const list = $("list"), drop = $("drop"), input = $("input");
+const items = [];
+
+const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2).replace(".", ",") + " Go"
+  : n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " Mo"
+  : n >= 1e3 ? Math.round(n / 1e3) + " Ko" : n + " o";
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function refreshToolbar() {
+  const ready = items.filter(i => i.url);
+  $("toolbar").hidden = items.length === 0;
+  $("count").textContent = items.length === 1 ? "1 vidéo" : items.length + " vidéos";
+  $("all").disabled = ready.length === 0;
+  $("all").style.display = items.length > 1 ? "" : "none";
+}
+
+function download(item) {
+  const a = document.createElement("a");
+  a.href = item.url; a.download = item.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+async function handle(file) {
+  const li = el("li", "item");
+  const row = el("div", "row");
+  const name = el("div", "name", file.name);
+  const status = el("span", "status work", "Analyse…");
+  row.append(name, status);
+  const sizes = el("div", "sizes mono", fmt(file.size));
+  const chips = el("div", "chips");
+  const actions = el("div", "actions");
+  li.append(row, sizes, chips, actions);
+  list.prepend(li);
+  const item = { name: file.name, li, url: null };
+  items.push(item); refreshToolbar();
+
+  if (!/\.(mp4|mov|m4v)$/i.test(file.name) && !/^video\/(mp4|quicktime)/.test(file.type)) {
+    status.className = "status err"; status.textContent = "Format non pris en charge";
+    return;
+  }
+  try {
+    const { blob, rep, leftover } = await cleanFile(file);
+    item.url = URL.createObjectURL(blob);
+    const removed = file.size - blob.size;
+    sizes.textContent = `${fmt(file.size)} → ${fmt(blob.size)}` + (removed > 0 ? ` · ${fmt(removed)} de métadonnées retirées` : "");
+
+    const add = (text, ai) => chips.append(el("span", "chip" + (ai ? " ai" : ""), text));
+    if (rep.c2pa) add("Content Credentials (C2PA)");
+    rep.ai.forEach(a => add("IA : " + a, true));
+    rep.tools.forEach(t => add(t));
+    if (rep.xmp) add("XMP Adobe");
+    if (rep.meta) add("Métadonnées udta / meta");
+    if (rep.otherUuid) add("Blocs uuid");
+    if (rep.dates) add("Dates de création");
+    if (rep.encoder) add("Nom de l'encodeur");
+
+    const found = rep.c2pa || rep.xmp || rep.meta || rep.otherUuid;
+    if (leftover) { status.className = "status warn"; status.textContent = "À vérifier"; li.append(el("p", "note", "Une trace possible subsiste dans l'en-tête du fichier.")); }
+    else if (found) { status.className = "status ok"; status.textContent = "Nettoyée"; }
+    else { status.className = "status ok"; status.textContent = "Déjà propre"; }
+
+    const btn = el("button", "primary", "Télécharger");
+    btn.addEventListener("click", () => download(item));
+    actions.append(btn);
+  } catch (e) {
+    status.className = "status err"; status.textContent = "Erreur";
+    li.append(el("p", "note", e.message || String(e)));
+  }
+  refreshToolbar();
+}
+
+function take(files) { for (const f of files) handle(f); }
+
+input.addEventListener("change", () => { take(input.files); input.value = ""; });
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => take(e.dataTransfer.files));
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => { e.preventDefault(); if (!drop.contains(e.target)) take(e.dataTransfer.files); });
+
+$("all").addEventListener("click", async () => {
+  for (const i of items.filter(i => i.url)) { download(i); await new Promise(r => setTimeout(r, 500)); }
+});
+$("clear").addEventListener("click", () => {
+  items.forEach(i => i.url && URL.revokeObjectURL(i.url));
+  items.length = 0; list.replaceChildren(); refreshToolbar();
+});
+})();
+</script>
+</body>
+</html>

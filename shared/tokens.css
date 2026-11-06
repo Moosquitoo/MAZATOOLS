@@ -1,0 +1,36 @@
+/* MAZATOOLS : thème commun au hub et à tous les outils.
+   Une seule source pour les couleurs, en clair comme en sombre.
+   Le thème choisi (data-theme sur <html>) est appliqué par shared/theme.js. */
+
+:root {
+  --bg: #f5f4f0; --surface: #ffffff; --surface-2: #faf9f6; --text: #1a1a18; --muted: #6f6d66;
+  --border: #e3e0d8; --border-strong: #cfcbc0;
+  --accent: #1f3d35; --accent-ink: #ffffff; --accent-soft: #e5ede9;
+  --ok: #2e7d4f; --ok-bg: #e6f2ea; --warn: #8a5300; --warn-bg: #fbefd9; --err: #b3261e; --err-bg: #fbe8e6;
+  --chip: #f0eee8; --chip-ai: #efe7fb; --chip-ai-ink: #5b3a99;
+  --shadow: 0 1px 2px rgba(20,20,10,.04), 0 4px 16px rgba(20,20,10,.04);
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111110; --surface: #1a1a18; --surface-2: #161615; --text: #ecebe6; --muted: #9a988f;
+    --border: #2b2a27; --border-strong: #3d3b37;
+    --accent: #cfe3da; --accent-ink: #10201b; --accent-soft: #1c2a25;
+    --ok: #7bd3a0; --ok-bg: #15261d; --warn: #f0b65a; --warn-bg: #2a2112; --err: #f28b82; --err-bg: #2c1614;
+    --chip: #24231f; --chip-ai: #261f33; --chip-ai-ink: #c9b2f2;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111110; --surface: #1a1a18; --surface-2: #161615; --text: #ecebe6; --muted: #9a988f;
+  --border: #2b2a27; --border-strong: #3d3b37;
+  --accent: #cfe3da; --accent-ink: #10201b; --accent-soft: #1c2a25;
+  --ok: #7bd3a0; --ok-bg: #15261d; --warn: #f0b65a; --warn-bg: #2a2112; --err: #f28b82; --err-bg: #2c1614;
+  --chip: #24231f; --chip-ai: #261f33; --chip-ai-ink: #c9b2f2;
+  --shadow: none; color-scheme: dark;
+}
+
+/* Ouvert dans MAZATOOLS, un outil laisse le hub gérer le thème. */
+.in-hub .theme { display: none; }
