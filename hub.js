@@ -9,6 +9,9 @@ const scrim = $('.scrim');
 const menuBtn = $('.menu-btn');
 const openAlone = $('#open-alone');
 const frames = new Map(); // un iframe par outil, gardé ouvert pour ne pas couper un traitement en cours
+const APPS = TOOLS.filter((t) => !t.url);   // outils affichés dans le hub
+const LINKS = TOOLS.filter((t) => t.url);   // sites externes, ouverts dans un nouvel onglet
+const EXT_ICON = '<svg class="ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 
 /* ---------- Construction des listes ---------- */
 
@@ -23,8 +26,15 @@ function icon(tool) {
 function toolLink(tool, cls) {
   const a = document.createElement('a');
   a.className = cls;
-  a.href = `#${tool.id}`;
   a.dataset.id = tool.id;
+  if (tool.url) {
+    a.href = tool.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.classList.add('external');
+  } else {
+    a.href = `#${tool.id}`;
+  }
   const text = document.createElement('span');
   text.className = 'tool-text';
   text.append(
@@ -32,19 +42,27 @@ function toolLink(tool, cls) {
     Object.assign(document.createElement('span'), { className: 'tool-desc', textContent: tool.description }),
   );
   a.append(icon(tool), text);
+  if (tool.url) {
+    a.insertAdjacentHTML('beforeend', EXT_ICON);
+    a.append(Object.assign(document.createElement('span'), { className: 'sr', textContent: ' (nouvel onglet)' }));
+  }
   return a;
 }
 
 function build() {
   $('.brand-name').textContent = SITE.name;
-  for (const tool of TOOLS) {
-    const li = document.createElement('li');
-    li.append(toolLink(tool, 'tool-link'));
-    $('#tool-list').append(li);
-    const hli = document.createElement('li');
-    hli.append(toolLink(tool, 'home-link'));
-    $('#home-list').append(hli);
-  }
+  const fill = (list, items, cls) => {
+    for (const tool of items) {
+      const li = document.createElement('li');
+      li.append(toolLink(tool, cls));
+      list.append(li);
+    }
+  };
+  fill($('#tool-list'), APPS, 'tool-link');
+  fill($('#home-list'), APPS, 'home-link');
+  fill($('#link-list'), LINKS, 'tool-link');
+  fill($('#home-links'), LINKS, 'home-link');
+  for (const el of document.querySelectorAll('.links-group')) el.hidden = LINKS.length === 0;
   linkSource();
 }
 
@@ -90,13 +108,13 @@ function frameFor(tool) {
 
 function show() {
   const id = decodeURIComponent(location.hash.slice(1));
-  const tool = TOOLS.find((t) => t.id === id);
+  const tool = APPS.find((t) => t.id === id);
 
   home.hidden = Boolean(tool);
   for (const [fid, frame] of frames) frame.hidden = !tool || fid !== tool.id;
   if (tool) frameFor(tool).hidden = false;
 
-  for (const a of document.querySelectorAll('.tool-link')) {
+  for (const a of document.querySelectorAll('.tool-link:not(.external)')) {
     if (tool && a.dataset.id === tool.id) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }

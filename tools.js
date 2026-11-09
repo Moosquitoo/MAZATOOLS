@@ -5,6 +5,8 @@
 //   name        nom affiché
 //   description une ligne qui dit à quoi sert l'outil
 //   path        dossier de l'outil (doit contenir un index.html)
+//   url         à la place de path : lien vers un site externe, ouvert dans un nouvel onglet
+//               (rangé dans la partie « Liens » de la barre latérale)
 //   icon        tracés SVG d'une icône 24×24 au trait (style Lucide : https://lucide.dev)
 
 export const SITE = {
@@ -32,5 +34,12 @@ export const TOOLS = [
     description: "Récupérer les images d'une présentation ou d'un PDF",
     path: 'tools/images-powerpoint/',
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  },
+  {
+    id: 'netexplorer',
+    name: 'NET EXPLORER',
+    description: 'Envoyer des fichiers volumineux',
+    url: 'https://mazarine.netexplorer.pro/transfers/sends',
+    icon: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   },
 ];

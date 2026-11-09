@@ -8,6 +8,8 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | [REMOVE AI FILTER](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
 | [Images PowerPoint & PDF](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation ou d'un PDF dans leur qualité d'origine |
 
+Liens rapides (ouverts dans un nouvel onglet) : [NET EXPLORER](https://mazarine.netexplorer.pro/transfers/sends), pour envoyer des fichiers volumineux.
+
 ## Liens
 
 - Site : `https://<pseudo>.github.io/` (ou `https://<pseudo>.github.io/<dépôt>/`)
@@ -38,6 +40,22 @@ Le dépôt doit être **public** pour que GitHub Pages soit gratuit.
    },
    ```
 3. Poussez sur GitHub. L'outil apparaît dans la barre et sur la page d'accueil.
+
+### Ajouter un lien vers un site externe
+
+Pour un service en ligne (transfert de fichiers, intranet…), remplacez `path` par `url` dans `tools.js` :
+
+```js
+{
+  id: 'netexplorer',
+  name: 'NET EXPLORER',
+  description: 'Envoyer des fichiers volumineux',
+  url: 'https://mazarine.netexplorer.pro/transfers/sends',
+  icon: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+},
+```
+
+Il apparaît dans la partie « Liens » et s'ouvre dans un nouvel onglet. Les sites avec connexion refusent en général de s'afficher à l'intérieur d'une autre page, et le navigateur y bloquerait de toute façon la connexion : le nouvel onglet est la seule façon fiable.
 
 Les outils doivent utiliser des chemins relatifs (`css/style.css`, pas `/css/style.css`) pour fonctionner depuis leur sous-dossier.
 
