@@ -36,6 +36,13 @@ export const TOOLS = [
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
   },
   {
+    id: 'convertisseur-ableton',
+    name: 'CONVERTISSEUR ABLETON',
+    description: 'Convertir une vidéo en AVI pour Live 11',
+    path: 'tools/convertisseur-ableton/',
+    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9M12.4 3.4l3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+  },
+  {
     id: 'netexplorer',
     name: 'NET EXPLORER',
     description: 'Envoyer des fichiers volumineux',

@@ -7,6 +7,7 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | [SHRINKSIZER](tools/shrinksizer/) | Réduire une vidéo à la taille voulue (en Mo), avec la meilleure qualité possible |
 | [REMOVE AI FILTER](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
 | [Images PowerPoint & PDF](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation ou d'un PDF dans leur qualité d'origine |
+| [CONVERTISSEUR ABLETON](tools/convertisseur-ableton/) | Convertir un MP4 / MOV en AVI H.264 lisible par Ableton Live 11 |
 
 Liens rapides (ouverts dans un nouvel onglet) : [NET EXPLORER](https://mazarine.netexplorer.pro/transfers/sends), pour envoyer des fichiers volumineux.
 
@@ -87,4 +88,5 @@ shared/                       thème commun : couleurs, police, clair / sombre
 tools/shrinksizer/            compresseur vidéo (voir son README)
 tools/nettoyeur-video/        REMOVE AI FILTER : retrait des Content Credentials
 tools/images-powerpoint/      extracteur d'images PowerPoint & PDF
+tools/convertisseur-ableton/  conversion vidéo en AVI pour Ableton Live 11
 ```
