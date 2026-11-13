@@ -122,6 +122,17 @@ function snapFps(f) {
   return best;
 }
 
+// Some encoders (Windows' own) label their output plain "Baseline"; Windows' decoder wants
+// "Constrained Baseline". The stream is the same, only the SPS constraint flags differ.
+function markConstrained(b) {
+  for (let i = 0; i + 6 < b.length; i++) {
+    if (b[i] === 0 && b[i + 1] === 0 && b[i + 2] === 1 && (b[i + 3] & 0x1f) === 7) {
+      if (b[i + 4] === 66) b[i + 5] |= 0xC0;
+      i += 3;
+    }
+  }
+}
+
 /* ---------- Audio ---------- */
 async function decodeAudio(file, mp4, at, aS) {
   const sr = at.audio.sample_rate, srcCh = at.audio.channel_count;
@@ -226,7 +237,9 @@ async function convert({ file, li }) {
   if (rot % 180) [dw, dh] = [dh, dw];
   let W = dw, H = dh;
   if (maxH && Math.min(dw, dh) > maxH) { const k = maxH / Math.min(dw, dh); W = dw * k; H = dh * k; }
-  W = Math.max(16, Math.round(W / 16) * 16); H = Math.max(16, Math.round(H / 8) * 8);
+  // Windows' built-in H.264 decoder stops at 1920×1080 (portrait too): fit inside that box
+  { const k = Math.min(1, 1920 / W, 1080 / H); W *= k; H *= k; }
+  W = Math.max(16, Math.min(1920, Math.round(W / 16) * 16)); H = Math.max(16, Math.min(1080, Math.round(H / 8) * 8));
   li.querySelector(".meta").textContent = `${fmtSize(file.size)}, ${W}×${H}, ${String(+(rate / scale).toFixed(2)).replace(".", ",")} i/s, ${fmtDur(durSec)}`;
 
   // Video decoder
@@ -273,7 +286,7 @@ async function convert({ file, li }) {
   const frames = []; let encErr = null, bytes = 0;
   const LIMIT = 1.95e9 - (audio ? audio.pcm.byteLength : 0);
   const enc = new VideoEncoder({
-    output: ch => { const b = new Uint8Array(ch.byteLength); ch.copyTo(b); frames.push({ data: b, key: ch.type === "key" }); bytes += b.byteLength + 24; },
+    output: ch => { const b = new Uint8Array(ch.byteLength); ch.copyTo(b); if (ch.type === "key") markConstrained(b); frames.push({ data: b, key: ch.type === "key" }); bytes += b.byteLength + 24; },
     error: e => { encErr = e; }
   });
   enc.configure(encCfg);

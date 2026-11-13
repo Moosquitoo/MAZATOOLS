@@ -9,7 +9,7 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | [Images PowerPoint & PDF](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation ou d'un PDF dans leur qualité d'origine |
 | [CONVERTISSEUR ABLETON](tools/convertisseur-ableton/) | Convertir un MP4 / MOV en AVI H.264 lisible par Ableton Live 11 |
 
-Liens rapides (ouverts dans un nouvel onglet) : [NET EXPLORER](https://mazarine.netexplorer.pro/transfers/sends), pour envoyer des fichiers volumineux.
+Liens rapides (ouverts dans un nouvel onglet) : [NET EXPLORER](https://mazarine.netexplorer.pro/transfers/sends), pour envoyer des fichiers volumineux ; [COBALT](https://cobalt.tools/), pour télécharger une vidéo YouTube, Instagram, TikTok… à partir de son lien.
 
 ## Liens
 
