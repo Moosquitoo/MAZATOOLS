@@ -24,7 +24,7 @@ export const TOOLS = [
   {
     id: 'remove-ai-filter',
     name: 'REMOVE AI FILTER',
-    description: 'Retirer les Content Credentials',
+    description: 'Retirer les Content Credentials des vidéos et images',
     path: 'tools/nettoyeur-video/',
     icon: '<path d="M21 21H8a2 2 0 0 1-1.42-.59l-3-3a2 2 0 0 1 0-2.82l10-10a2 2 0 0 1 2.83 0l4.59 4.58a2 2 0 0 1 0 2.83L13 21"/><path d="M8.5 10.5l5 5"/>',
   },

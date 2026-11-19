@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>REMOVE AI FILTER</title>
-<meta name="description" content="Retire les Content Credentials (C2PA) et les métadonnées Adobe de vos vidéos MP4 / MOV, directement dans le navigateur.">
+<meta name="description" content="Retire les Content Credentials (C2PA) et les métadonnées de vos vidéos (MP4, MOV) et images (JPG, PNG), directement dans le navigateur.">
 <script src="../../shared/theme.js"></script>
 <link rel="stylesheet" href="../../shared/tokens.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,15 +103,15 @@ details li{margin:4px 0}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
     </div>
-    <h1>Retirez les Content Credentials de vos vidéos</h1>
-    <p class="lead">Supprime le manifeste C2PA, les métadonnées Adobe (XMP) et les autres informations de fichier, sans réencoder la vidéo. La qualité est identique.</p>
+    <h1>Retirez les Content Credentials de vos vidéos et images</h1>
+    <p class="lead">Supprime le manifeste C2PA, les métadonnées Adobe (XMP), les données EXIF et les autres informations de fichier, sans réencoder l'image ni la vidéo. La qualité est identique.</p>
   </header>
 
   <label class="drop" id="drop">
-    <input type="file" id="input" class="sr" multiple accept=".mp4,.mov,.m4v,video/mp4,video/quicktime">
+    <input type="file" id="input" class="sr" multiple accept=".mp4,.mov,.m4v,.jpg,.jpeg,.png,video/mp4,video/quicktime,image/jpeg,image/png">
     <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
-    <strong>Déposez vos vidéos ici</strong>
-    <small>ou cliquez pour choisir · MP4, MOV, M4V</small>
+    <strong>Déposez vos vidéos ou images ici</strong>
+    <small>ou cliquez pour choisir. MP4, MOV, M4V, JPG, PNG</small>
   </label>
 
   <div class="toolbar" id="toolbar" hidden>
@@ -125,15 +125,16 @@ details li{margin:4px 0}
 
   <footer>
     <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-    Tout se passe dans votre navigateur : aucune vidéo n'est envoyée sur un serveur.</p>
+    Tout se passe dans votre navigateur&nbsp;: aucun fichier n'est envoyé sur un serveur.</p>
     <details>
       <summary>Ce qui est retiré</summary>
       <ul>
         <li>Le manifeste C2PA / Content Credentials (outil utilisé, mentions d'IA générative, historique)</li>
         <li>Les métadonnées XMP d'Adobe et les blocs <span class="mono">udta</span> / <span class="mono">meta</span></li>
-        <li>Les dates de création et le nom de l'encodeur</li>
+        <li>Vidéos&nbsp;: les dates de création et le nom de l'encodeur</li>
+        <li>Images&nbsp;: les données EXIF (appareil, logiciel, dates, position GPS), IPTC / Photoshop, les commentaires, les miniatures, les textes PNG (dont les prompts de génération enregistrés par Stable Diffusion ou ComfyUI)</li>
       </ul>
-      <p style="margin-top:10px">Seules les métadonnées du fichier sont touchées. Un éventuel filigrane invisible intégré dans l'image elle-même n'est pas modifié. Formats fragmentés (streaming) non pris en charge.</p>
+      <p style="margin-top:10px">Sont conservés&nbsp;: le profil de couleur (pour garder les mêmes couleurs) et le sens de la photo (pour qu'elle ne s'affiche pas tournée). Seules les métadonnées du fichier sont touchées&nbsp;: un éventuel filigrane invisible intégré dans les pixels eux-mêmes (comme SynthID de Google) n'est pas modifié. Vidéos fragmentées (streaming) non prises en charge.</p>
     </details>
   </footer>
 </main>
@@ -260,23 +261,32 @@ const AI_TYPES = [
   ["algorithmicMedia", "Média algorithmique"],
 ];
 
-function noteDropped(bytes, type, rep) {
-  const s = latin1(bytes);
-  if (type === "c2pa" || s.includes("c2pa")) inspectC2PA(s, bytes.length, rep);
-  if (s.includes("xmpmeta") || type === "XMP_") rep.xmp = true;
-  if (type === "udta" || type === "meta") rep.meta = true;
-  const tool = s.match(/<xmp:CreatorTool>([^<]{1,80})</);
-  if (tool) rep.tools.add(tool[1].trim());
-}
+const GENERATORS = /\b(OpenAI|DALL[·\-]?E ?\d?|ChatGPT|Midjourney|Stable Diffusion|ComfyUI|Google (?:Gemini|Imagen)|Microsoft Designer|Bing Image Creator|Leonardo\.Ai|Ideogram|Runway|Sora)\b/g;
 
-function inspectC2PA(s, size, rep) {
-  rep.c2pa = (rep.c2pa || 0) + size;
+/** Repère les mentions d'IA et les logiciels dans un texte de métadonnées. */
+function scanText(s, rep) {
   let rest = s;
   for (const [key, label] of AI_TYPES) {
     if (rest.includes(key)) { rep.ai.add(label); rest = rest.split(key).join(""); }
   }
   for (const m of s.matchAll(/Adobe (Firefly|Premiere Pro|After Effects|Photoshop|Media Encoder|Express|Illustrator|Lightroom)/g))
     rep.tools.add("Adobe " + m[1]);
+  for (const m of s.matchAll(GENERATORS)) rep.tools.add(m[1]);
+  const tool = s.match(/<xmp:CreatorTool>([^<]{1,80})</) || s.match(/xmp:CreatorTool="([^"]{1,80})"/);
+  if (tool) rep.tools.add(tool[1].trim());
+}
+
+function noteDropped(bytes, type, rep) {
+  const s = latin1(bytes);
+  if (type === "c2pa" || s.includes("c2pa")) rep.c2pa = (rep.c2pa || 0) + bytes.length;
+  if (s.includes("xmpmeta") || s.includes("ns.adobe.com/xap") || type === "XMP_") rep.xmp = true;
+  if (type === "udta" || type === "meta") rep.meta = true;
+  scanText(s, rep);
+}
+
+function inspectC2PA(s, size, rep) {
+  rep.c2pa = (rep.c2pa || 0) + size;
+  scanText(s, rep);
 }
 
 function* offsetTables(u8, start, end) {
@@ -356,6 +366,219 @@ async function cleanFile(file) {
   return { blob, rep, leftover };
 }
 
+/* ---------- Images : EXIF ---------- */
+
+/** Lit l'essentiel d'un bloc EXIF (format TIFF) : sens de la photo, GPS, appareil, logiciel. */
+function readExif(t) {
+  const info = { orientation: 1, gps: false, camera: "", software: "" };
+  try {
+    const dv = new DataView(t.buffer, t.byteOffset, t.byteLength);
+    const le = t[0] === 0x49; // "II" = petit-boutiste, "MM" = gros-boutiste
+    const u16 = o => dv.getUint16(o, le), u32 = o => dv.getUint32(o, le);
+    const ifd = u32(4), n = u16(ifd);
+    const ascii = (count, at) => {
+      const start = count <= 4 ? at : u32(at);
+      return latin1(t.subarray(start, start + count)).replace(/\0.*$/s, "").trim();
+    };
+    let make = "", model = "";
+    for (let i = 0; i < n; i++) {
+      const e = ifd + 2 + i * 12, tag = u16(e), count = u32(e + 4);
+      if (tag === 0x0112) info.orientation = u16(e + 8);
+      else if (tag === 0x8825) info.gps = true;
+      else if (tag === 0x010F) make = ascii(count, e + 8);
+      else if (tag === 0x0110) model = ascii(count, e + 8);
+      else if (tag === 0x0131) info.software = ascii(count, e + 8);
+    }
+    info.camera = model.toLowerCase().startsWith(make.toLowerCase()) ? model : [make, model].filter(Boolean).join(" ");
+  } catch (e) { /* EXIF abîmé : on le retire quand même */ }
+  if (!(info.orientation >= 1 && info.orientation <= 8)) info.orientation = 1;
+  return info;
+}
+
+function noteExif(info, rep) {
+  rep.exif = true;
+  if (info.gps) rep.gps = true;
+  if (info.camera) rep.camera = info.camera;
+  if (info.software) { rep.tools.add(info.software.slice(0, 60)); scanText(info.software, rep); }
+}
+
+/** Segment EXIF minimal qui ne garde que le sens de la photo. */
+function orientationSegment(orientation) {
+  const b = new Uint8Array(36);
+  const dv = new DataView(b.buffer);
+  b.set([0xFF, 0xE1]); dv.setUint16(2, 34);
+  b.set([0x45, 0x78, 0x69, 0x66, 0, 0], 4);                 // "Exif\0\0"
+  b.set([0x4D, 0x4D, 0x00, 0x2A, 0, 0, 0, 8], 10);          // en-tête TIFF "MM"
+  dv.setUint16(18, 1);                                      // une seule entrée
+  dv.setUint16(20, 0x0112); dv.setUint16(22, 3); dv.setUint32(24, 1); dv.setUint16(28, orientation);
+  dv.setUint32(32, 0);                                      // pas d'autre IFD
+  return b;
+}
+
+/* ---------- Images : JPEG ---------- */
+
+async function cleanJpeg(file, rep) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  const parts = [u8.subarray(0, 2)];
+  const header = [];       // segments conservés, pour la vérification finale
+  let orientation = 1, exifAt = 1, o = 2, ended = false;
+  const bad = () => new Error("Image JPEG invalide ou tronquée.");
+
+  while (o < u8.length) {
+    if (u8[o] !== 0xFF) throw bad();
+    const m = u8[o + 1];
+    if (m === 0xFF) { o++; continue; }                                 // octet de remplissage
+    if (m === 0xD9) { parts.push(u8.subarray(o, o + 2)); o += 2; ended = true; break; }
+    if ((m >= 0xD0 && m <= 0xD7) || m === 0x01) { parts.push(u8.subarray(o, o + 2)); o += 2; continue; }
+    if (o + 4 > u8.length) throw bad();
+    const end = o + 2 + ((u8[o + 2] << 8) | u8[o + 3]);
+    if (end > u8.length || end < o + 4) throw bad();
+    const seg = u8.subarray(o, end), data = u8.subarray(o + 4, end);
+    const id = latin1(data.subarray(0, 40));
+    let keep = true;
+
+    if (m === 0xE0) {                                    // APP0 : JFIF gardé, miniature JFXX retirée
+      keep = id.startsWith("JFIF\0");
+      if (!keep) rep.thumb = true;
+    } else if (m === 0xE1) {                             // APP1 : EXIF ou XMP
+      keep = false;
+      if (id.startsWith("Exif\0")) {
+        const info = readExif(data.subarray(6));
+        orientation = info.orientation;
+        noteExif(info, rep);
+        scanText(latin1(data), rep);
+      } else noteDropped(data, "XMP_", rep);
+    } else if (m === 0xE2) {                             // APP2 : profil de couleur gardé
+      keep = id.startsWith("ICC_PROFILE\0");
+      if (!keep) noteDropped(data, "app", rep);
+    } else if (m === 0xEB) {                             // APP11 : JUMBF = Content Credentials
+      keep = false;
+      inspectC2PA(latin1(data), data.length, rep);
+    } else if (m === 0xED) {                             // APP13 : Photoshop / IPTC
+      keep = false; rep.iptc = true; noteDropped(data, "iptc", rep);
+    } else if (m === 0xEE) {                             // APP14 « Adobe » : nécessaire au décodage des couleurs
+      keep = id.startsWith("Adobe");
+      if (!keep) noteDropped(data, "app", rep);
+    } else if (m >= 0xE3 && m <= 0xEF) {                 // autres APPn
+      keep = false; rep.other = true; noteDropped(data, "app", rep);
+    } else if (m === 0xFE) {                             // commentaire
+      keep = false; rep.comment = true; scanText(latin1(data), rep);
+    }
+
+    if (keep) {
+      parts.push(seg);
+      if (m !== 0xDA) header.push(seg);
+      if (m === 0xE0) exifAt = parts.length;             // l'EXIF minimal se place après JFIF
+    }
+    o = end;
+
+    if (m === 0xDA) {                                    // données d'image : copiées telles quelles
+      let p = o;
+      while (p < u8.length) {
+        if (u8[p] === 0xFF) {
+          const n = u8[p + 1];
+          if (n === 0x00 || (n >= 0xD0 && n <= 0xD7)) { p += 2; continue; }
+          if (n === 0xFF) { p++; continue; }
+          break;
+        }
+        p++;
+      }
+      parts.push(u8.subarray(o, p));
+      o = p;
+    }
+  }
+  if (!ended && !parts.length) throw bad();
+  if (o < u8.length) {                                   // données après la fin de l'image (photo animée, etc.)
+    rep.trailer = u8.length - o;
+    noteDropped(u8.subarray(o, Math.min(u8.length, o + 2e6)), "trailer", rep);
+  }
+  if (orientation !== 1) parts.splice(exifAt, 0, orientationSegment(orientation));
+
+  return { blob: new Blob(parts, { type: "image/jpeg" }), headerText: header.map(latin1).join("") };
+}
+
+/* ---------- Images : PNG ---------- */
+
+// Blocs utiles à l'affichage : tout le reste (textes, EXIF, dates, C2PA…) est retiré.
+const PNG_KEEP = new Set(["IHDR","PLTE","IDAT","IEND","tRNS","gAMA","cHRM","sRGB","iCCP","sBIT","bKGD","pHYs","hIST","acTL","fcTL","fdAT","cICP","mDCv","cLLi"]);
+const PROMPT_KEYS = new Set(["parameters","prompt","workflow","negative_prompt","sd-metadata","invokeai_metadata","Dream"]);
+
+async function inflateText(bytes) {
+  try {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate"));
+    return latin1(new Uint8Array(await new Response(stream).arrayBuffer()));
+  } catch (e) { return ""; }
+}
+
+async function pngText(type, data) {
+  const z = data.indexOf(0);
+  const key = latin1(data.subarray(0, z < 0 ? 0 : z));
+  if (type === "tEXt") return { key, text: latin1(data.subarray(z + 1)) };
+  if (type === "zTXt") return { key, text: await inflateText(data.subarray(z + 2)) };
+  // iTXt : mot-clé, compression, méthode, langue, mot-clé traduit, texte
+  const compressed = data[z + 1] === 1;
+  let p = z + 3;
+  p = data.indexOf(0, p) + 1;   // après la langue
+  p = data.indexOf(0, p) + 1;   // après le mot-clé traduit
+  const body = data.subarray(p);
+  return { key, text: compressed ? await inflateText(body) : new TextDecoder().decode(body) };
+}
+
+async function cleanPng(file, rep) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(u8.buffer);
+  const parts = [u8.subarray(0, 8)];
+  const header = [];
+  let o = 8, ended = false;
+  while (o + 12 <= u8.length) {
+    const len = dv.getUint32(o), type = fourcc(u8, o + 4), end = o + 12 + len;
+    if (end > u8.length) throw new Error("Image PNG invalide ou tronquée.");
+    const chunk = u8.subarray(o, end), data = u8.subarray(o + 8, o + 8 + len);
+    const critical = type.charCodeAt(0) < 97;   // majuscule = bloc indispensable
+    if (PNG_KEEP.has(type) || critical) {
+      parts.push(chunk);
+      if (type !== "IDAT" && type !== "fdAT") header.push(chunk);
+    } else if (type === "caBX") {
+      inspectC2PA(latin1(data), len, rep);
+    } else if (type === "eXIf") {
+      noteExif(readExif(data), rep);
+    } else if (type === "tIME") {
+      rep.dates = true;
+    } else if (type === "tEXt" || type === "zTXt" || type === "iTXt") {
+      const { key, text } = await pngText(type, data);
+      if (key === "XML:com.adobe.xmp") { rep.xmp = true; scanText(text, rep); }
+      else {
+        rep.text = true;
+        if (PROMPT_KEYS.has(key)) rep.ai.add("Prompt de génération enregistré");
+        scanText(key + " " + text, rep);
+      }
+    } else {
+      rep.other = true; noteDropped(data, type, rep);
+    }
+    o = end;
+    if (type === "IEND") { ended = true; break; }
+  }
+  if (!ended) throw new Error("Image PNG invalide ou tronquée.");
+  if (o < u8.length) { rep.trailer = u8.length - o; noteDropped(u8.subarray(o, Math.min(u8.length, o + 2e6)), "trailer", rep); }
+  return { blob: new Blob(parts, { type: "image/png" }), headerText: header.map(latin1).join("") };
+}
+
+async function cleanImage(file, kind) {
+  const rep = { c2pa: 0, xmp: false, meta: false, dates: false, encoder: false, otherUuid: 0, ai: new Set(), tools: new Set() };
+  const { blob, headerText } = kind === "jpeg" ? await cleanJpeg(file, rep) : await cleanPng(file, rep);
+  const leftover = /c2pa|jumbf|xmpmeta|contentauth/i.test(headerText);
+  return { blob, rep, leftover };
+}
+
+/** Reconnaît le type réel du fichier à ses premiers octets. */
+async function sniff(file) {
+  const h = await readBytes(file, 0, 12);
+  if (h[0] === 0xFF && h[1] === 0xD8 && h[2] === 0xFF) return "jpeg";
+  if (h[0] === 0x89 && h[1] === 0x50 && h[2] === 0x4E && h[3] === 0x47) return "png";
+  if (fourcc(h, 4) === "ftyp" || /\.(mp4|mov|m4v)$/i.test(file.name) || /^video\/(mp4|quicktime)/.test(file.type)) return "video";
+  return null;
+}
+
 /* ---------- Interface ---------- */
 const $ = id => document.getElementById(id);
 const list = $("list"), drop = $("drop"), input = $("input");
@@ -370,7 +593,7 @@ function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.
 function refreshToolbar() {
   const ready = items.filter(i => i.url);
   $("toolbar").hidden = items.length === 0;
-  $("count").textContent = items.length === 1 ? "1 vidéo" : items.length + " vidéos";
+  $("count").textContent = items.length === 1 ? "1 fichier" : items.length + " fichiers";
   $("all").disabled = ready.length === 0;
   $("all").style.display = items.length > 1 ? "" : "none";
 }
@@ -395,12 +618,15 @@ async function handle(file) {
   const item = { name: file.name, li, url: null };
   items.push(item); refreshToolbar();
 
-  if (!/\.(mp4|mov|m4v)$/i.test(file.name) && !/^video\/(mp4|quicktime)/.test(file.type)) {
-    status.className = "status err"; status.textContent = "Format non pris en charge";
-    return;
-  }
   try {
-    const { blob, rep, leftover } = await cleanFile(file);
+    const kind = await sniff(file);
+    if (!kind) {
+      status.className = "status err"; status.textContent = "Format non pris en charge";
+      li.append(el("p", "note", "Formats acceptés : MP4, MOV, M4V, JPG et PNG."));
+      refreshToolbar();
+      return;
+    }
+    const { blob, rep, leftover } = kind === "video" ? await cleanFile(file) : await cleanImage(file, kind);
     item.url = URL.createObjectURL(blob);
     const removed = file.size - blob.size;
     sizes.textContent = `${fmt(file.size)} → ${fmt(blob.size)}` + (removed > 0 ? ` · ${fmt(removed)} de métadonnées retirées` : "");
@@ -408,16 +634,27 @@ async function handle(file) {
     const add = (text, ai) => chips.append(el("span", "chip" + (ai ? " ai" : ""), text));
     if (rep.c2pa) add("Content Credentials (C2PA)");
     rep.ai.forEach(a => add("IA : " + a, true));
-    rep.tools.forEach(t => add(t));
+    // « Adobe Firefly » est redondant si « Adobe Firefly Image 3 » est déjà affiché
+    const tools = [...rep.tools];
+    tools.filter(t => !tools.some(u => u !== t && u.toLowerCase().startsWith(t.toLowerCase() + " "))).forEach(t => add(t));
     if (rep.xmp) add("XMP Adobe");
     if (rep.meta) add("Métadonnées udta / meta");
     if (rep.otherUuid) add("Blocs uuid");
+    if (rep.exif) add("EXIF");
+    if (rep.camera) add("Appareil : " + rep.camera);
+    if (rep.gps) add("Position GPS");
+    if (rep.iptc) add("IPTC / Photoshop");
+    if (rep.text) add("Textes PNG");
+    if (rep.comment) add("Commentaire");
+    if (rep.thumb) add("Miniature");
+    if (rep.trailer) add("Données après l'image");
+    if (rep.other) add("Autres blocs");
     if (rep.dates) add("Dates de création");
     if (rep.encoder) add("Nom de l'encodeur");
 
-    const found = rep.c2pa || rep.xmp || rep.meta || rep.otherUuid;
+    const found = rep.c2pa || rep.xmp || rep.meta || rep.otherUuid || rep.exif || rep.iptc || rep.text || rep.comment || rep.thumb || rep.trailer || rep.other || rep.dates || rep.ai.size;
     if (leftover) { status.className = "status warn"; status.textContent = "À vérifier"; li.append(el("p", "note", "Une trace possible subsiste dans l'en-tête du fichier.")); }
-    else if (found) { status.className = "status ok"; status.textContent = "Nettoyée"; }
+    else if (found) { status.className = "status ok"; status.textContent = "Nettoyé"; }
     else { status.className = "status ok"; status.textContent = "Déjà propre"; }
 
     const btn = el("button", "primary", "Télécharger");

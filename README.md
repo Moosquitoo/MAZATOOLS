@@ -5,7 +5,7 @@ Mes petits outils, réunis sur un seul site avec une barre latérale. Chaque out
 | Outil | À quoi il sert |
 | --- | --- |
 | [SHRINKSIZER](tools/shrinksizer/) | Réduire une vidéo à la taille voulue (en Mo), avec la meilleure qualité possible |
-| [REMOVE AI FILTER](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des MP4 / MOV |
+| [REMOVE AI FILTER](tools/nettoyeur-video/) | Retirer les Content Credentials (C2PA) et les métadonnées des vidéos (MP4, MOV) et des images (JPG, PNG) |
 | [Images PowerPoint & PDF](tools/images-powerpoint/) | Voir et télécharger les images d'une présentation ou d'un PDF dans leur qualité d'origine |
 | [CONVERTISSEUR ABLETON](tools/convertisseur-ableton/) | Convertir un MP4 / MOV en AVI H.264 lisible par Ableton Live 11 |
 
